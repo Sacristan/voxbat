@@ -1,11 +1,12 @@
 extends Node3D
 
-const GRID_SIZE := 16
+const GRID_SIZE := 8
 const CellScene := preload("res://scenes/cell.tscn")
 
 var grid: Array = []  # grid[z][x] -> Cell
 
 @onready var grid_root: Node3D = $GridRoot
+@onready var camera_rig = $CameraRig
 @onready var hud = $HUD
 
 
@@ -13,6 +14,7 @@ func _ready() -> void:
 	get_viewport().physics_object_picking = true
 	_spawn_grid()
 	_place_starting_cells()
+	camera_rig.fit_to_grid(GRID_SIZE)
 	GameState.turn_changed.connect(func(p: PlayerData) -> void: hud.update_turn(p.player_name))
 	hud.update_turn(GameState.current_player().player_name)
 

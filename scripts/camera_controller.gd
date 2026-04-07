@@ -55,6 +55,30 @@ func _unhandled_input(event: InputEvent) -> void:
 				_drag_start_pos = position
 
 
+func fit_to_grid(grid_size: int) -> void:
+	var half := grid_size / 2.0
+	var corners := [
+		Vector3(-half, 0.0,  half),
+		Vector3( half, 0.0,  half),
+		Vector3(-half, 0.0, -half),
+		Vector3( half, 0.0, -half),
+	]
+	zoom = MAX_ZOOM
+	_apply_zoom()
+	while zoom > MIN_ZOOM + 1.0:
+		zoom -= 1.0
+		_apply_zoom()
+		var all_in := true
+		for c in corners:
+			if not camera.is_position_in_frustum(c):
+				all_in = false
+				break
+		if not all_in:
+			zoom += 3.0  # step back with padding
+			_apply_zoom()
+			break
+
+
 func _apply_zoom() -> void:
 	var angle := deg_to_rad(CAMERA_ANGLE_DEG)
 	camera.position = Vector3(0.0, zoom * cos(angle), zoom * sin(angle))
