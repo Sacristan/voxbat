@@ -1,13 +1,59 @@
-[gd_scene load_steps=2 format=3 uid="uid://bpqrst123hud1"]
+[gd_scene format=3 uid="uid://bpqrst123hud1"]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud001"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud001")
 
-[node name="TurnLabel" type="Label" parent="."]
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 300.0
-offset_bottom = 44.0
+[node name="TopBar" type="PanelContainer" parent="."]
+anchor_right = 1.0
+offset_bottom = 48.0
+
+[node name="TopBarInner" type="HBoxContainer" parent="TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="EndTurnButton" type="Button" parent="TopBar/TopBarInner"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "END TURN"
+
+[node name="TurnLabel" type="Label" parent="TopBar/TopBarInner"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Turn: Player A"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResourceBar" type="HBoxContainer" parent="TopBar/TopBarInner"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ManpowerLabel" type="Label" parent="TopBar/TopBarInner/ResourceBar"]
+layout_mode = 2
+text = "Manpower: 100"
+vertical_alignment = 1
+
+[node name="SuppliesLabel" type="Label" parent="TopBar/TopBarInner/ResourceBar"]
+layout_mode = 2
+text = "Supplies: 100"
+vertical_alignment = 1
+
+[node name="MaterialsLabel" type="Label" parent="TopBar/TopBarInner/ResourceBar"]
+layout_mode = 2
+text = "Materials: 100"
+vertical_alignment = 1
+
+[node name="GameOverLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -36.0
+offset_right = 220.0
+offset_bottom = 36.0
+visible = false
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1

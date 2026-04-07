@@ -4,6 +4,7 @@ signal turn_changed(player: PlayerData)
 
 var players: Array[PlayerData] = []
 var current_player_index: int = 0
+var has_occupied_this_turn: bool = false
 
 
 func _ready() -> void:
@@ -22,6 +23,11 @@ func current_player() -> PlayerData:
 	return players[current_player_index]
 
 
-func advance_turn() -> void:
+func opponent() -> PlayerData:
+	return players[(current_player_index + 1) % players.size()]
+
+
+func end_turn() -> void:
+	has_occupied_this_turn = false
 	current_player_index = (current_player_index + 1) % players.size()
 	turn_changed.emit(current_player())

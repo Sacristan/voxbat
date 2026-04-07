@@ -15,9 +15,10 @@ func _ready() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 
 
-func show_for_cell(cell: Cell, can_occupy: bool) -> void:
+func show_for_cell(cell: Cell, can_occupy: bool, cost: int) -> void:
 	_current_cell = cell
-	info_label.text = "(%d, %d)" % [cell.grid_x, cell.grid_z]
+	info_label.text = "%s (%d, %d)" % [cell.type_name(), cell.grid_x, cell.grid_z]
+	occupy_btn.text = "OCCUPY (%d MP)" % cost if cost > 0 else "OCCUPY"
 	occupy_btn.disabled = not can_occupy
 	show()
 
