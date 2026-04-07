@@ -142,6 +142,19 @@ func _apply_turn_effects(player_idx: int) -> void:
 					player.manpower = max(0, player.manpower - 1)
 
 
+func _calc_manpower_delta(player_idx: int) -> int:
+	var delta := 0
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.owner_index == player_idx:
+				if cell.cell_type == Cell.CellType.RESIDENTIAL:
+					delta += 10
+				elif cell.cell_type == Cell.CellType.RESOURCE:
+					delta -= 1
+	return delta
+
+
 func _update_hud() -> void:
 	hud.update_turn(GameState.current_player().player_name)
-	hud.update_resources(GameState.current_player())
+	hud.update_resources(GameState.current_player(), _calc_manpower_delta(GameState.current_player_index))

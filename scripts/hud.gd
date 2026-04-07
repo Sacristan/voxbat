@@ -4,6 +4,7 @@ signal end_turn_pressed
 
 @onready var turn_label: Label = $TopBar/TopBarInner/TurnLabel
 @onready var manpower_label: Label = $TopBar/TopBarInner/ResourceBar/ManpowerLabel
+@onready var manpower_delta_label: Label = $TopBar/TopBarInner/ResourceBar/ManpowerDeltaLabel
 @onready var supplies_label: Label = $TopBar/TopBarInner/ResourceBar/SuppliesLabel
 @onready var materials_label: Label = $TopBar/TopBarInner/ResourceBar/MaterialsLabel
 @onready var end_turn_btn: Button = $TopBar/TopBarInner/EndTurnButton
@@ -18,8 +19,15 @@ func update_turn(player_name: String) -> void:
 	turn_label.text = "Turn: " + player_name
 
 
-func update_resources(player: PlayerData) -> void:
+func update_resources(player: PlayerData, manpower_delta: int = 0) -> void:
 	manpower_label.text = "Manpower: %d" % player.manpower
+	manpower_delta_label.text = "(+%d)" % manpower_delta if manpower_delta >= 0 else "(%d)" % manpower_delta
+	if manpower_delta < 0:
+		manpower_delta_label.modulate = Color(1.0, 0.25, 0.25)
+	elif manpower_delta <= 2:
+		manpower_delta_label.modulate = Color(1.0, 0.9, 0.0)
+	else:
+		manpower_delta_label.modulate = Color(0.25, 1.0, 0.35)
 	supplies_label.text = "Supplies: %d" % player.supplies
 	materials_label.text = "Materials: %d" % player.materials
 
