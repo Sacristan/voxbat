@@ -119,12 +119,12 @@ func _cell_mp(cell: Cell) -> int:
 		return 0
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
-			return Config.get_value("economy.resource.mp", -1)
+			return Config.get_value("economy.resource_cell_mp", -1)
 		Cell.CellType.INDUSTRY:
-			var vals: Array = Config.get_value("economy.industry_mp_per_level", [-2, -3, -5])
+			var vals: Array = Config.get_value("economy.industry_cell_mp_per_level", [-2, -3, -5])
 			return vals[cell.cell_level - 1]
 		Cell.CellType.RESIDENTIAL:
-			var vals: Array = Config.get_value("economy.residential_mp_per_level", [2, 5, 10])
+			var vals: Array = Config.get_value("economy.residential_cell_mp_per_level", [2, 5, 10])
 			return vals[cell.cell_level - 1]
 	return 0
 
@@ -134,11 +134,11 @@ func _cell_sup(cell: Cell) -> int:
 		return 0
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
-			return Config.get_value("economy.resource.sup", 5)
+			return Config.get_value("economy.resource_cell_sup", 5)
 		Cell.CellType.INDUSTRY:
-			return Config.get_value("economy.industry_sup", -10)
+			return Config.get_value("economy.industry_cell_sup", -10)
 		Cell.CellType.RESIDENTIAL:
-			return Config.get_value("economy.residential_sup", -10)
+			return Config.get_value("economy.residential_cell_sup", -10)
 	return 0
 
 
@@ -147,17 +147,17 @@ func _cell_mat(cell: Cell) -> int:
 		return 0
 	match cell.cell_type:
 		Cell.CellType.INDUSTRY:
-			var vals: Array = Config.get_value("economy.industry_mat_per_level", [5, 10, 20])
+			var vals: Array = Config.get_value("economy.industry_cell_mat_per_level", [5, 10, 20])
 			return vals[cell.cell_level - 1]
 		Cell.CellType.RESIDENTIAL:
-			return Config.get_value("economy.residential_mat", -5)
+			return Config.get_value("economy.residential_cell_mat", -5)
 	return 0
 
 
 # --- Costs ---
 
 func _residential_mp_output(level: int) -> int:
-	var vals: Array = Config.get_value("economy.residential_mp_per_level", [2, 5, 10])
+	var vals: Array = Config.get_value("economy.residential_cell_mp_per_level", [2, 5, 10])
 	return vals[level - 1]
 
 

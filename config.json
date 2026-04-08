@@ -22,17 +22,18 @@
     }
   ],
   "economy": {
-    "resource":                   { "mp": -1, "sup": 5, "mat": 0 },
-    "residential_mp_per_level":   [2, 5, 10],
-    "residential_sup":            -10,
-    "residential_mat":            -5,
-    "industry_mp_per_level":      [-2, -3, -5],
-    "industry_sup":               -10,
-    "industry_mat_per_level":     [5, 10, 20],
-    "zero_supply_mp_penalty":     -10,
-    "zero_material_mp_penalty":   -10,
-    "starvation_turns_to_lose":   3,
-    "upgrade_cooldown_turns":     3
+    "resource_cell_mp":                  -1,
+    "resource_cell_sup":                  5,
+    "residential_cell_mp_per_level":     [2, 5, 10],
+    "residential_cell_sup":              -10,
+    "residential_cell_mat":              -5,
+    "industry_cell_mp_per_level":        [-2, -3, -5],
+    "industry_cell_sup":                 -10,
+    "industry_cell_mat_per_level":       [5, 10, 20],
+    "zero_supply_mp_penalty":            -10,
+    "zero_material_mp_penalty":          -10,
+    "starvation_turns_to_lose":           3,
+    "upgrade_cooldown_turns":             3
   },
   "occupation": {
     "neutral_cost":                        10,
