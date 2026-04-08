@@ -184,7 +184,9 @@ func _raze_cost(cell: Cell) -> int:
 
 
 func _upgrade_cost(cell: Cell) -> Dictionary:
-	var idx := cell.cell_level - 1
+	if cell.cell_level >= 3 or cell.cell_type == Cell.CellType.RESOURCE:
+		return {"mp": 0, "sup": 0}
+	var idx := cell.cell_level - 1  # 0 = L1→2, 1 = L2→3
 	if cell.cell_type == Cell.CellType.RESIDENTIAL:
 		var mp_costs: Array = Config.get_value("upgrade.residential_mp_costs", [15, 30])
 		return {"mp": mp_costs[idx], "sup": 0}
