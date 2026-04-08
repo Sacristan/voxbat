@@ -119,23 +119,14 @@ func upgrade() -> void:
 
 func raze() -> void:
 	upgrade_cooldown = 0
-	if cell_type != CellType.RESOURCE and cell_level > 1:
-		# Decrease level; ownership stays
-		cell_level -= 1
-		_update_level_visual()
-	else:
-		# Level 1 or resource → becomes rubble
-		owner_index = -1
-		var res_turns: int = Config.get_value("raze.resource_turns")
-		var ind_turns: int = Config.get_value("raze.industry_turns")
-		var res_res_turns: int = Config.get_value("raze.residential_turns")
-		match cell_type:
-			CellType.RESOURCE:    raze_turns_remaining = res_turns
-			CellType.INDUSTRY:    raze_turns_remaining = ind_turns
-			CellType.RESIDENTIAL: raze_turns_remaining = res_res_turns
-		_fill_mat.albedo_color = RAZED_COLOR
-		_outline_mat.grow_amount = 0.0
-		_update_level_visual()
+	owner_index = -1
+	match cell_type:
+		CellType.RESOURCE:    raze_turns_remaining = Config.get_value("raze.resource_rubble_turns")
+		CellType.INDUSTRY:    raze_turns_remaining = Config.get_value("raze.industry_rubble_turns")
+		CellType.RESIDENTIAL: raze_turns_remaining = Config.get_value("raze.residential_rubble_turns")
+	_fill_mat.albedo_color = RAZED_COLOR
+	_outline_mat.grow_amount = 0.0
+	_update_level_visual()
 
 
 func restore_from_raze() -> void:

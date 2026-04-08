@@ -165,25 +165,44 @@ func _residential_mp_output(level: int) -> int:
 
 
 func _occupation_cost(cell: Cell) -> int:
-	if cell.cell_type == Cell.CellType.RESIDENTIAL:
-		var base := _residential_mp_output(cell.cell_level)
-		if cell.owner_index == -1:
-			return base
-		if cell.owner_index != GameState.current_player_index:
-			var mult: int = Config.get_value("occupation.enemy_residential_cost_multiplier")
-			return base * mult
+	if cell.owner_index == GameState.current_player_index:
 		return 0
-	if cell.owner_index == -1:
-		return Config.get_value("occupation.neutral_cost")
-	if cell.owner_index != GameState.current_player_index:
-		return Config.get_value("occupation.enemy_cost")
-	return 0
+	var is_enemy := cell.owner_index != -1
+	match cell.cell_type:
+		Cell.CellType.RESIDENTIAL:
+			var base := _residential_mp_output(cell.cell_level)
+			if is_enemy:
+				return base * int(Config.get_value("occupation.enemy_residential_cost_multiplier"))
+			return base
+		Cell.CellType.INDUSTRY:
+			var costs: Array = Config.get_value("occupation.industry_cell_cost_per_level")
+			var base: int = costs[cell.cell_level - 1]
+			if is_enemy:
+				return base * int(Config.get_value("occupation.industry_cell_enemy_cost_multiplier"))
+			return base
+		_:  # RESOURCE
+			if is_enemy:
+				return Config.get_value("occupation.resource_cell_enemy_cost")
+			return Config.get_value("occupation.resource_cell_neutral_cost")
 
 
 func _raze_cost(cell: Cell) -> int:
-	if cell.owner_index != -1 and cell.owner_index != GameState.current_player_index:
-		return Config.get_value("raze.enemy_cost")
-	return Config.get_value("raze.own_cost")
+	if cell.owner_index == GameState.current_player_index:
+		return Config.get_value("raze.self_occupied_mp_cost")
+	var is_enemy := cell.owner_index != -1
+	match cell.cell_type:
+		Cell.CellType.RESOURCE:
+			if is_enemy:
+				return Config.get_value("raze.resource_cell_enemy_mp_cost")
+			return Config.get_value("raze.resource_cell_neutral_mp_cost")
+		Cell.CellType.INDUSTRY:
+			var key := "raze.industry_cell_enemy_mp_per_level" if is_enemy else "raze.industry_cell_neutral_mp_per_level"
+			var costs: Array = Config.get_value(key)
+			return costs[cell.cell_level - 1]
+		_:  # RESIDENTIAL
+			var key := "raze.residential_cell_enemy_mp_per_level" if is_enemy else "raze.residential_cell_neutral_mp_per_level"
+			var costs: Array = Config.get_value(key)
+			return costs[cell.cell_level - 1]
 
 
 func _upgrade_cost(cell: Cell) -> Dictionary:
@@ -355,7 +374,19 @@ func _on_occupy_pressed(cell: Cell) -> void:
 
 
 func _on_raze_pressed(cell: Cell) -> void:
-	GameState.current_player().manpower -= _raze_cost(cell)
+	var player := GameState.current_player()
+	player.manpower -= _raze_cost(cell)
+	var yield_turns: int = Config.get_value("raze.resource_yield_turns")
+	match cell.cell_type:
+		Cell.CellType.RESOURCE:
+			player.supplies += int(Config.get_value("economy.resource_cell_sup")) * yield_turns
+		Cell.CellType.INDUSTRY:
+			var mat_vals: Array = Config.get_value("economy.industry_cell_mat_per_level")
+			player.materials += int(mat_vals[cell.cell_level - 1]) * yield_turns
+		Cell.CellType.RESIDENTIAL:
+			var mp_vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
+			var pct: int = Config.get_value("raze.residential_mp_refund_percent")
+			player.manpower += int(mp_vals[cell.cell_level - 1] * pct / 100.0)
 	cell.raze()
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true

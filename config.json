@@ -36,16 +36,25 @@
     "upgrade_cooldown_turns":             3
   },
   "occupation": {
-    "neutral_cost":                        10,
-    "enemy_cost":                          20,
-    "enemy_residential_cost_multiplier":   2
+    "resource_cell_neutral_cost":            10,
+    "resource_cell_enemy_cost":              20,
+    "industry_cell_cost_per_level":          [15, 20, 25],
+    "industry_cell_enemy_cost_multiplier":   2,
+    "enemy_residential_cost_multiplier":     2
   },
   "raze": {
-    "own_cost":           15,
-    "enemy_cost":         25,
-    "resource_turns":     3,
-    "industry_turns":     5,
-    "residential_turns":  5
+    "self_occupied_mp_cost":                  10,
+    "resource_cell_neutral_mp_cost":          10,
+    "resource_cell_enemy_mp_cost":            20,
+    "industry_cell_neutral_mp_per_level":     [10, 20, 35],
+    "industry_cell_enemy_mp_per_level":       [20, 40, 70],
+    "residential_cell_neutral_mp_per_level":  [2, 5, 10],
+    "residential_cell_enemy_mp_per_level":    [4, 10, 20],
+    "residential_mp_refund_percent":          20,
+    "resource_yield_turns":                   2,
+    "resource_rubble_turns":                  3,
+    "industry_rubble_turns":                  5,
+    "residential_rubble_turns":               5
   },
   "upgrade": {
     "residential_mp_costs":  [15, 30],
