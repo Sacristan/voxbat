@@ -17,11 +17,12 @@ func _ready() -> void:
 	data = parsed
 
 
-func get_value(path: String, default = null):
+func get_value(path: String):
 	var keys := path.split(".")
 	var node = data
 	for k in keys:
 		if not node is Dictionary or not node.has(k):
-			return default
+			push_error("Config: missing key '%s'" % path)
+			return null
 		node = node[k]
 	return node

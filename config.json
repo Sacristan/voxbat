@@ -11,24 +11,24 @@
       "color": [1.0, 0.15, 0.15],
       "manpower": 100,
       "supplies": 100,
-      "materials": 100
+      "materials": 50
     },
     {
       "name": "Player B",
       "color": [0.15, 0.35, 1.0],
       "manpower": 100,
       "supplies": 100,
-      "materials": 100
+      "materials": 50
     }
   ],
   "economy": {
     "resource_cell_mp":                  -1,
     "resource_cell_sup":                  5,
     "residential_cell_mp_per_level":     [2, 5, 10],
-    "residential_cell_sup":              -10,
-    "residential_cell_mat":              -5,
+    "residential_cell_sup_per_level":    [-2, -5, -10],
+    "residential_cell_mat_per_level":    [0, -2, -5],
     "industry_cell_mp_per_level":        [-2, -3, -5],
-    "industry_cell_sup":                 -10,
+    "industry_cell_sup_per_level":        [-4, -8, -15],
     "industry_cell_mat_per_level":       [5, 10, 20],
     "zero_supply_mp_penalty":            -10,
     "zero_material_mp_penalty":          -10,

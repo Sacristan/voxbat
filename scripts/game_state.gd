@@ -8,7 +8,7 @@ var has_occupied_this_turn: bool = false
 
 
 func _ready() -> void:
-	var pcfg: Array = Config.get_value("players", [])
+	var pcfg: Array = Config.get_value("players")
 	for pd in pcfg:
 		var p := PlayerData.new()
 		p.player_name = pd.get("name", "Player")

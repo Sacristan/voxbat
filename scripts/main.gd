@@ -18,12 +18,12 @@ var _is_game_over: bool = false
 
 
 func _ready() -> void:
-	GRID_SIZE = Config.get_value("grid.size", 5)
-	for p in Config.get_value("grid.start_positions", [[0, 0], [4, 4]]):
+	GRID_SIZE = Config.get_value("grid.size")
+	for p in Config.get_value("grid.start_positions"):
 		_start_positions.append(Vector2i(p[0], p[1]))
-	for p in Config.get_value("grid.industrial_positions", []):
+	for p in Config.get_value("grid.industrial_positions"):
 		_industrial_positions.append(Vector2i(p[0], p[1]))
-	for p in Config.get_value("grid.village_positions", []):
+	for p in Config.get_value("grid.village_positions"):
 		_village_positions.append(Vector2i(p[0], p[1]))
 
 	get_viewport().physics_object_picking = true
@@ -119,12 +119,12 @@ func _cell_mp(cell: Cell) -> int:
 		return 0
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
-			return Config.get_value("economy.resource_cell_mp", -1)
+			return Config.get_value("economy.resource_cell_mp")
 		Cell.CellType.INDUSTRY:
-			var vals: Array = Config.get_value("economy.industry_cell_mp_per_level", [-2, -3, -5])
+			var vals: Array = Config.get_value("economy.industry_cell_mp_per_level")
 			return vals[cell.cell_level - 1]
 		Cell.CellType.RESIDENTIAL:
-			var vals: Array = Config.get_value("economy.residential_cell_mp_per_level", [2, 5, 10])
+			var vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
 			return vals[cell.cell_level - 1]
 	return 0
 
@@ -134,11 +134,13 @@ func _cell_sup(cell: Cell) -> int:
 		return 0
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
-			return Config.get_value("economy.resource_cell_sup", 5)
+			return Config.get_value("economy.resource_cell_sup")
 		Cell.CellType.INDUSTRY:
-			return Config.get_value("economy.industry_cell_sup", -10)
+			var vals: Array = Config.get_value("economy.industry_cell_sup_per_level")
+			return vals[cell.cell_level - 1]
 		Cell.CellType.RESIDENTIAL:
-			return Config.get_value("economy.residential_cell_sup", -10)
+			var vals: Array = Config.get_value("economy.residential_cell_sup_per_level")
+			return vals[cell.cell_level - 1]
 	return 0
 
 
@@ -147,17 +149,18 @@ func _cell_mat(cell: Cell) -> int:
 		return 0
 	match cell.cell_type:
 		Cell.CellType.INDUSTRY:
-			var vals: Array = Config.get_value("economy.industry_cell_mat_per_level", [5, 10, 20])
+			var vals: Array = Config.get_value("economy.industry_cell_mat_per_level")
 			return vals[cell.cell_level - 1]
 		Cell.CellType.RESIDENTIAL:
-			return Config.get_value("economy.residential_cell_mat", -5)
+			var vals: Array = Config.get_value("economy.residential_cell_mat_per_level")
+			return vals[cell.cell_level - 1]
 	return 0
 
 
 # --- Costs ---
 
 func _residential_mp_output(level: int) -> int:
-	var vals: Array = Config.get_value("economy.residential_cell_mp_per_level", [2, 5, 10])
+	var vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
 	return vals[level - 1]
 
 
@@ -167,20 +170,20 @@ func _occupation_cost(cell: Cell) -> int:
 		if cell.owner_index == -1:
 			return base
 		if cell.owner_index != GameState.current_player_index:
-			var mult: int = Config.get_value("occupation.enemy_residential_cost_multiplier", 2)
+			var mult: int = Config.get_value("occupation.enemy_residential_cost_multiplier")
 			return base * mult
 		return 0
 	if cell.owner_index == -1:
-		return Config.get_value("occupation.neutral_cost", 10)
+		return Config.get_value("occupation.neutral_cost")
 	if cell.owner_index != GameState.current_player_index:
-		return Config.get_value("occupation.enemy_cost", 20)
+		return Config.get_value("occupation.enemy_cost")
 	return 0
 
 
 func _raze_cost(cell: Cell) -> int:
 	if cell.owner_index != -1 and cell.owner_index != GameState.current_player_index:
-		return Config.get_value("raze.enemy_cost", 25)
-	return Config.get_value("raze.own_cost", 15)
+		return Config.get_value("raze.enemy_cost")
+	return Config.get_value("raze.own_cost")
 
 
 func _upgrade_cost(cell: Cell) -> Dictionary:
@@ -188,11 +191,11 @@ func _upgrade_cost(cell: Cell) -> Dictionary:
 		return {"mp": 0, "sup": 0}
 	var idx := cell.cell_level - 1  # 0 = L1→2, 1 = L2→3
 	if cell.cell_type == Cell.CellType.RESIDENTIAL:
-		var mp_costs: Array = Config.get_value("upgrade.residential_mp_costs", [15, 30])
+		var mp_costs: Array = Config.get_value("upgrade.residential_mp_costs")
 		return {"mp": mp_costs[idx], "sup": 0}
 	elif cell.cell_type == Cell.CellType.INDUSTRY:
-		var sup_costs: Array = Config.get_value("upgrade.industry_sup_costs", [20, 50])
-		var mp_costs: Array = Config.get_value("upgrade.industry_mp_costs", [20, 30])
+		var sup_costs: Array = Config.get_value("upgrade.industry_sup_costs")
+		var mp_costs: Array = Config.get_value("upgrade.industry_mp_costs")
 		return {"mp": mp_costs[idx], "sup": sup_costs[idx]}
 	return {"mp": 0, "sup": 0}
 
@@ -259,9 +262,9 @@ func _calc_resource_deltas(player_idx: int) -> Dictionary:
 			mat += _cell_mat(cell)
 	var player := GameState.players[player_idx]
 	if player.supplies + sup <= 0:
-		mp += Config.get_value("economy.zero_supply_mp_penalty", -10)
+		mp += Config.get_value("economy.zero_supply_mp_penalty")
 	if player.materials + mat <= 0:
-		mp += Config.get_value("economy.zero_material_mp_penalty", -10)
+		mp += Config.get_value("economy.zero_material_mp_penalty")
 	return {"mp": mp, "sup": sup, "mat": mat}
 
 
@@ -285,12 +288,12 @@ func _apply_turn_effects(player_idx: int) -> String:
 			player.supplies = max(0, player.supplies + _cell_sup(cell))
 			player.materials = max(0, player.materials + _cell_mat(cell))
 	if player.supplies == 0:
-		player.manpower = max(0, player.manpower + Config.get_value("economy.zero_supply_mp_penalty", -10))
+		player.manpower = max(0, player.manpower + Config.get_value("economy.zero_supply_mp_penalty"))
 	if player.materials == 0:
-		player.manpower = max(0, player.manpower + Config.get_value("economy.zero_material_mp_penalty", -10))
+		player.manpower = max(0, player.manpower + Config.get_value("economy.zero_material_mp_penalty"))
 	if residential_starved:
 		player.starvation_turns += 1
-		var limit: int = Config.get_value("economy.starvation_turns_to_lose", 3)
+		var limit: int = Config.get_value("economy.starvation_turns_to_lose")
 		if player.starvation_turns >= limit:
 			var opp_idx := (player_idx + 1) % GameState.players.size()
 			return GameState.players[opp_idx].player_name
@@ -445,8 +448,8 @@ func _compute_resource_breakdown(which: String) -> String:
 		lines.append("  %s ×%d:  %s" % [key, cnt, amt_str])
 
 	if which == "mp":
-		var sup_pen: int = Config.get_value("economy.zero_supply_mp_penalty", -10)
-		var mat_pen: int = Config.get_value("economy.zero_material_mp_penalty", -10)
+		var sup_pen: int = Config.get_value("economy.zero_supply_mp_penalty")
+		var mat_pen: int = Config.get_value("economy.zero_material_mp_penalty")
 		if player.supplies + cell_sup_total <= 0:
 			running_total += sup_pen
 			lines.append("  Zero supplies:   %d" % sup_pen)

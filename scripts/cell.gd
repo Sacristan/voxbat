@@ -113,7 +113,7 @@ func claim(player: PlayerData) -> void:
 
 func upgrade() -> void:
 	cell_level += 1
-	upgrade_cooldown = Config.get_value("economy.upgrade_cooldown_turns", 3)
+	upgrade_cooldown = Config.get_value("economy.upgrade_cooldown_turns")
 	_update_level_visual()
 
 
@@ -126,9 +126,9 @@ func raze() -> void:
 	else:
 		# Level 1 or resource → becomes rubble
 		owner_index = -1
-		var res_turns: int = Config.get_value("raze.resource_turns", 3)
-		var ind_turns: int = Config.get_value("raze.industry_turns", 5)
-		var res_res_turns: int = Config.get_value("raze.residential_turns", 5)
+		var res_turns: int = Config.get_value("raze.resource_turns")
+		var ind_turns: int = Config.get_value("raze.industry_turns")
+		var res_res_turns: int = Config.get_value("raze.residential_turns")
 		match cell_type:
 			CellType.RESOURCE:    raze_turns_remaining = res_turns
 			CellType.INDUSTRY:    raze_turns_remaining = ind_turns
