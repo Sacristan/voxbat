@@ -81,34 +81,28 @@ func _get_connected_positions(player_idx: int) -> Dictionary:
 	var queue: Array = [start]
 	while queue.size() > 0:
 		var cur: Vector2i = queue.pop_front()
-		for dz in [-1, 0, 1]:
-			for dx in [-1, 0, 1]:
-				if dx == 0 and dz == 0:
-					continue
-				var nx: int = cur.x + dx
-				var nz: int = cur.y + dz
-				if nx < 0 or nx >= GRID_SIZE or nz < 0 or nz >= GRID_SIZE:
-					continue
-				var npos := Vector2i(nx, nz)
-				if visited.has(npos):
-					continue
-				if grid[nz][nx].owner_index == player_idx:
-					visited[npos] = true
-					queue.append(npos)
+		for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+			var nx: int = cur.x + d.x
+			var nz: int = cur.y + d.y
+			if nx < 0 or nx >= GRID_SIZE or nz < 0 or nz >= GRID_SIZE:
+				continue
+			var npos := Vector2i(nx, nz)
+			if visited.has(npos):
+				continue
+			if grid[nz][nx].owner_index == player_idx:
+				visited[npos] = true
+				queue.append(npos)
 	return visited
 
 
 func _has_adjacent_owned(gx: int, gz: int, player_idx: int) -> bool:
-	for dz in [-1, 0, 1]:
-		for dx in [-1, 0, 1]:
-			if dx == 0 and dz == 0:
-				continue
-			var nx: int = gx + dx
-			var nz: int = gz + dz
-			if nx < 0 or nx >= GRID_SIZE or nz < 0 or nz >= GRID_SIZE:
-				continue
-			if grid[nz][nx].owner_index == player_idx:
-				return true
+	for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var nx: int = gx + d.x
+		var nz: int = gz + d.y
+		if nx < 0 or nx >= GRID_SIZE or nz < 0 or nz >= GRID_SIZE:
+			continue
+		if grid[nz][nx].owner_index == player_idx:
+			return true
 	return false
 
 
@@ -414,13 +408,13 @@ func _on_panel_closed() -> void:
 func _on_end_turn() -> void:
 	if _is_game_over:
 		return
-	_tick_timers(GameState.current_player_index)
-	var winner := _apply_turn_effects(GameState.current_player_index)
 	if _selected_cell != null:
 		_selected_cell.deselect()
 		_selected_cell = null
 	cell_panel.hide()
 	hud.close_all_panels()
+	_tick_timers(GameState.current_player_index)
+	var winner := _apply_turn_effects(GameState.current_player_index)
 	if winner != "":
 		_is_game_over = true
 		hud.show_game_over(winner)
