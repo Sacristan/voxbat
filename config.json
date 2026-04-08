@@ -35,8 +35,9 @@
     "upgrade_cooldown_turns":     3
   },
   "occupation": {
-    "neutral_cost":  10,
-    "enemy_cost":    20
+    "neutral_cost":                        10,
+    "enemy_cost":                          20,
+    "enemy_residential_cost_multiplier":   2
   },
   "raze": {
     "own_cost":           15,

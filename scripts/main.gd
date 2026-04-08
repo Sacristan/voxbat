@@ -166,7 +166,8 @@ func _occupation_cost(cell: Cell) -> int:
 		if cell.owner_index == -1:
 			return base
 		if cell.owner_index != GameState.current_player_index:
-			return base * 2
+			var mult: int = Config.get_value("occupation.enemy_residential_cost_multiplier", 2)
+			return base * mult
 		return 0
 	if cell.owner_index == -1:
 		return Config.get_value("occupation.neutral_cost", 10)
