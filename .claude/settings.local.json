@@ -5,7 +5,8 @@
       "mcp__godot__run_project",
       "mcp__godot__get_debug_output",
       "mcp__godot__stop_project",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "WebFetch(domain:external-content.duckduckgo.com)"
     ]
   }
 }

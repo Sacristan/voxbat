@@ -25,7 +25,9 @@ const SELECTED_COLOR := Color(1.0, 0.9, 0.0)
 const RAZED_COLOR    := Color(0.22, 0.20, 0.18)
 const OUTLINE_GROW   := 0.08
 
-var _fill_mat: StandardMaterial3D
+const _CELL_SHADER := preload("res://shaders/cell.gdshader")
+
+var _fill_mat: ShaderMaterial
 var _outline_mat: StandardMaterial3D
 var _level_cubes: Array = []
 var _shortage_overlay: MeshInstance3D
@@ -38,8 +40,9 @@ static var _slice_meshes: Array = []
 
 
 func _ready() -> void:
-	_fill_mat = StandardMaterial3D.new()
-	_fill_mat.albedo_color = TYPE_COLORS[cell_type]
+	_fill_mat = ShaderMaterial.new()
+	_fill_mat.shader = _CELL_SHADER
+	_fill_mat.set_shader_parameter("albedo_color", TYPE_COLORS[cell_type])
 
 	_outline_mat = StandardMaterial3D.new()
 	_outline_mat.cull_mode = BaseMaterial3D.CULL_FRONT
@@ -172,7 +175,7 @@ func deselect() -> void:
 
 func claim(player: PlayerData) -> void:
 	owner_index = GameState.players.find(player)
-	_fill_mat.albedo_color = TYPE_COLORS[cell_type]
+	_fill_mat.set_shader_parameter("albedo_color", TYPE_COLORS[cell_type])
 	_outline_mat.grow_amount = OUTLINE_GROW
 	_outline_mat.albedo_color = player.color
 
@@ -190,14 +193,14 @@ func raze() -> void:
 		CellType.RESOURCE:    raze_turns_remaining = Config.get_value("raze.resource_rubble_turns")
 		CellType.INDUSTRY:    raze_turns_remaining = Config.get_value("raze.industry_rubble_turns")
 		CellType.RESIDENTIAL: raze_turns_remaining = Config.get_value("raze.residential_rubble_turns")
-	_fill_mat.albedo_color = RAZED_COLOR
+	_fill_mat.set_shader_parameter("albedo_color", RAZED_COLOR)
 	_outline_mat.grow_amount = 0.0
 	_update_level_visual()
 
 
 func restore_from_raze() -> void:
 	raze_turns_remaining = 0
-	_fill_mat.albedo_color = TYPE_COLORS[cell_type]
+	_fill_mat.set_shader_parameter("albedo_color", TYPE_COLORS[cell_type])
 	_update_level_visual()
 
 
