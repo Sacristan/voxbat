@@ -28,6 +28,11 @@ const OUTLINE_GROW   := 0.08
 var _fill_mat: StandardMaterial3D
 var _outline_mat: StandardMaterial3D
 var _level_cubes: Array = []
+var _shortage_overlay: MeshInstance3D
+var _shortage_label: Label3D
+var _shortage_mat: StandardMaterial3D
+var _shortage_tween: Tween
+var _is_shortage: bool = false
 
 static var _slice_meshes: Array = []
 
@@ -48,6 +53,7 @@ func _ready() -> void:
 
 	_create_level_cubes()
 	_update_level_visual()
+	_create_shortage_indicator()
 
 
 func _create_level_cubes() -> void:
@@ -89,6 +95,58 @@ func _update_level_visual() -> void:
 		return
 	for i in 3:
 		_level_cubes[i].visible = (i < cell_level)
+
+
+func _create_shortage_indicator() -> void:
+	_shortage_mat = StandardMaterial3D.new()
+	_shortage_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_shortage_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_shortage_mat.albedo_color = Color(1.0, 0.0, 0.0, 0.0)
+	_shortage_mat.render_priority = 1
+
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(0.88, 0.88)
+
+	_shortage_overlay = MeshInstance3D.new()
+	_shortage_overlay.mesh = plane
+	_shortage_overlay.material_override = _shortage_mat
+	_shortage_overlay.position = Vector3(0.0, 0.46, 0.0)
+	_shortage_overlay.visible = false
+	add_child(_shortage_overlay)
+
+	_shortage_label = Label3D.new()
+	_shortage_label.text = "Shortage"
+	_shortage_label.font_size = 28
+	_shortage_label.modulate = Color(1.0, 0.15, 0.15)
+	_shortage_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_shortage_label.no_depth_test = true
+	_shortage_label.position = Vector3(0.0, 1.3, 0.0)
+	_shortage_label.visible = false
+	add_child(_shortage_label)
+
+
+func set_shortage(active: bool, shortage_text: String = "") -> void:
+	if active == _is_shortage and (not active or _shortage_label.text == shortage_text):
+		return
+	_is_shortage = active
+	_shortage_overlay.visible = active
+	_shortage_label.visible = active
+	_shortage_label.text = shortage_text
+	if active:
+		if _shortage_tween == null or not _shortage_tween.is_valid():
+			_shortage_tween = create_tween()
+			_shortage_tween.set_loops()
+			_shortage_tween.tween_method(_set_shortage_alpha, 0.0, 0.55, 0.9)
+			_shortage_tween.tween_method(_set_shortage_alpha, 0.55, 0.0, 0.9)
+	else:
+		if _shortage_tween != null:
+			_shortage_tween.kill()
+			_shortage_tween = null
+		_shortage_mat.albedo_color = Color(1.0, 0.0, 0.0, 0.0)
+
+
+func _set_shortage_alpha(alpha: float) -> void:
+	_shortage_mat.albedo_color = Color(1.0, 0.0, 0.0, alpha)
 
 
 func _input_event(_camera: Camera3D, event: InputEvent,

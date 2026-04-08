@@ -499,7 +499,37 @@ func _compute_resource_breakdown(which: String) -> String:
 	return "\n".join(lines)
 
 
+func _update_shortage_indicators() -> void:
+	# Reset all cells first
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			(grid[z][x] as Cell).set_shortage(false)
+
+	for player_idx in GameState.players.size():
+		var player := GameState.players[player_idx]
+		var connected := _get_connected_positions(player_idx)
+		for z in GRID_SIZE:
+			for x in GRID_SIZE:
+				var cell: Cell = grid[z][x]
+				if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+					continue
+				if cell.raze_turns_remaining > 0 or cell.upgrade_cooldown > 0:
+					continue
+				var mp_need := -_cell_mp(cell)
+				var sup_need := -_cell_sup(cell)
+				var mat_need := -_cell_mat(cell)
+				var shortage := (
+					(mp_need > 0 and player.manpower < mp_need)
+					or (sup_need > 0 and player.supplies < sup_need)
+					or (mat_need > 0 and player.materials < mat_need)
+				)
+				if shortage:
+					var label := "Starving" if cell.cell_type == Cell.CellType.RESIDENTIAL else "Shortage"
+					cell.set_shortage(true, label)
+
+
 func _update_hud() -> void:
 	var deltas := _calc_resource_deltas(GameState.current_player_index)
 	hud.update_turn(GameState.current_player().player_name)
 	hud.update_resources(GameState.current_player(), deltas["mp"], deltas["sup"], deltas["mat"])
+	_update_shortage_indicators()
