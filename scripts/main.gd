@@ -2,6 +2,9 @@ extends Node3D
 
 const CellScene := preload("res://scenes/cell.tscn")
 
+# Flat-top hex grid constants (odd-q offset)
+const HEX_COL_STEP := sqrt(3.0) / 2.0  # x-distance between column centers ≈ 0.866
+
 var GRID_SIZE: int = 5
 var _start_positions: Array = []
 var _industrial_positions: Array = []
@@ -42,13 +45,16 @@ func _ready() -> void:
 
 
 func _spawn_grid() -> void:
+	var center_x := (GRID_SIZE - 1) * 0.5 * HEX_COL_STEP
+	var center_z := (GRID_SIZE - 0.5) * 0.5
 	grid.resize(GRID_SIZE)
 	for z in GRID_SIZE:
 		grid[z] = []
 		grid[z].resize(GRID_SIZE)
 		for x in GRID_SIZE:
 			var cell: Cell = CellScene.instantiate()
-			cell.position = Vector3(x - GRID_SIZE / 2.0 + 0.5, 0.0, z - GRID_SIZE / 2.0 + 0.5)
+			var odd_offset := 0.5 if x % 2 == 1 else 0.0
+			cell.position = Vector3(x * HEX_COL_STEP - center_x, 0.0, z + odd_offset - center_z)
 			cell.grid_x = x
 			cell.grid_z = z
 			var pos := Vector2i(x, z)
@@ -72,6 +78,15 @@ func _place_starting_cells() -> void:
 		grid[sp.y][sp.x].claim(GameState.players[i])
 
 
+func _hex_neighbors(gx: int, gz: int) -> Array:
+	if gx % 2 == 0:
+		return [Vector2i(gx+1,gz), Vector2i(gx+1,gz-1), Vector2i(gx,gz-1),
+				Vector2i(gx-1,gz-1), Vector2i(gx-1,gz), Vector2i(gx,gz+1)]
+	else:
+		return [Vector2i(gx+1,gz+1), Vector2i(gx+1,gz), Vector2i(gx,gz-1),
+				Vector2i(gx-1,gz), Vector2i(gx-1,gz+1), Vector2i(gx,gz+1)]
+
+
 # Returns positions reachable from the player's starting base via owned cells.
 func _get_connected_positions(player_idx: int) -> Dictionary:
 	var start: Vector2i = _start_positions[player_idx]
@@ -81,27 +96,22 @@ func _get_connected_positions(player_idx: int) -> Dictionary:
 	var queue: Array = [start]
 	while queue.size() > 0:
 		var cur: Vector2i = queue.pop_front()
-		for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-			var nx: int = cur.x + d.x
-			var nz: int = cur.y + d.y
-			if nx < 0 or nx >= GRID_SIZE or nz < 0 or nz >= GRID_SIZE:
+		for npos in _hex_neighbors(cur.x, cur.y):
+			if npos.x < 0 or npos.x >= GRID_SIZE or npos.y < 0 or npos.y >= GRID_SIZE:
 				continue
-			var npos := Vector2i(nx, nz)
 			if visited.has(npos):
 				continue
-			if grid[nz][nx].owner_index == player_idx:
+			if grid[npos.y][npos.x].owner_index == player_idx:
 				visited[npos] = true
 				queue.append(npos)
 	return visited
 
 
 func _has_adjacent_owned(gx: int, gz: int, player_idx: int) -> bool:
-	for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var nx: int = gx + d.x
-		var nz: int = gz + d.y
-		if nx < 0 or nx >= GRID_SIZE or nz < 0 or nz >= GRID_SIZE:
+	for npos in _hex_neighbors(gx, gz):
+		if npos.x < 0 or npos.x >= GRID_SIZE or npos.y < 0 or npos.y >= GRID_SIZE:
 			continue
-		if grid[nz][nx].owner_index == player_idx:
+		if grid[npos.y][npos.x].owner_index == player_idx:
 			return true
 	return false
 
