@@ -28,7 +28,10 @@ func show_for_cell(
 		can_upgrade: bool, upgrade_cost_text: String, show_upgrade: bool
 ) -> void:
 	_current_cell = cell
-	info_label.text = "%s (%d, %d)" % [cell.display_name(), cell.grid_x, cell.grid_z]
+	var q: int = cell.grid_x
+	var r: int = cell.grid_z - (cell.grid_x - (cell.grid_x & 1)) / 2
+	var s: int = -q - r
+	info_label.text = "%s (%d, %d, %d)" % [cell.display_name(), q, r, s]
 	occupy_btn.text = "OCCUPY (%d MP)" % occupy_cost if occupy_cost > 0 else "OCCUPY"
 	occupy_btn.disabled = not can_occupy
 	raze_btn.text = "RAZE (%d MP)" % raze_cost
