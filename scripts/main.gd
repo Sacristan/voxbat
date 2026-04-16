@@ -329,7 +329,8 @@ func _tick_timers(player_idx: int) -> void:
 	for z in GRID_SIZE:
 		for x in GRID_SIZE:
 			var cell: Cell = grid[z][x]
-			if cell.raze_turns_remaining > 0:
+			# Raze cooldown counts only on the razing player's turns
+			if cell.raze_turns_remaining > 0 and cell.raze_player_index == player_idx:
 				cell.raze_turns_remaining -= 1
 				if cell.raze_turns_remaining == 0:
 					cell.restore_from_raze()
@@ -392,6 +393,7 @@ func _on_raze_pressed(cell: Cell) -> void:
 			var mp_vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
 			var pct: int = Config.get_value("raze.residential_mp_refund_percent")
 			player.manpower += int(mp_vals[cell.cell_level - 1] * pct / 100.0)
+	cell.raze_player_index = GameState.current_player_index
 	cell.raze()
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true

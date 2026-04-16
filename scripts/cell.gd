@@ -11,6 +11,7 @@ var owner_index: int = -1
 var cell_type: CellType = CellType.RESOURCE
 var cell_level: int = 1
 var raze_turns_remaining: int = 0
+var raze_player_index: int = -1
 var upgrade_cooldown: int = 0
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
@@ -204,6 +205,7 @@ func raze() -> void:
 
 func restore_from_raze() -> void:
 	raze_turns_remaining = 0
+	raze_player_index = -1
 	_fill_mat.set_shader_parameter("albedo_color", TYPE_COLORS[cell_type])
 	_update_level_visual()
 
