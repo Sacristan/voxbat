@@ -9,7 +9,8 @@ signal panel_closed
 
 var _current_cell: Cell = null
 
-@onready var info_label: Label = $PanelContainer/MarginContainer/VBoxContainer/InfoLabel
+@onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TopRow/TitleLabel
+@onready var coords_label: Label = $PanelContainer/MarginContainer/VBoxContainer/CoordsLabel
 @onready var occupy_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/OccupyButton
 @onready var raze_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/RazeButton
 @onready var upgrade_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/UpgradeButton
@@ -39,7 +40,21 @@ func show_for_cell(
 	var q: int = cell.grid_x
 	var r: int = cell.grid_z - (cell.grid_x - (cell.grid_x & 1)) / 2
 	var s: int = -q - r
-	info_label.text = "%s (%d, %d, %d)" % [cell.display_name(), q, r, s]
+	coords_label.text = "(%d, %d, %d)" % [q, r, s]
+	var ctype: String
+	match cell.cell_type:
+		Cell.CellType.RESOURCE:    ctype = "Resource"
+		Cell.CellType.INDUSTRY:    ctype = "Industry"
+		Cell.CellType.RESIDENTIAL: ctype = "Residential"
+		_:                         ctype = ""
+	if cell.raze_turns_remaining > 0:
+		title_label.text = "Rubble (%d), %s" % [cell.raze_turns_remaining, ctype]
+	elif cell.cell_type == Cell.CellType.RESOURCE:
+		title_label.text = "Resource"
+	else:
+		title_label.text = "%s, %s (LVL%d)" % [cell.level_name(), ctype, cell.cell_level]
+		if cell.upgrade_cooldown > 0:
+			title_label.text += " ↑%d" % cell.upgrade_cooldown
 	occupy_btn.text = "OCCUPY (%d MP)" % occupy_cost if occupy_cost > 0 else "OCCUPY"
 	occupy_btn.disabled = not can_occupy
 	raze_btn.text = "RAZE (%d MP)" % raze_cost

@@ -34,12 +34,12 @@ text = "X"
 [node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/TopRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Cell Info"
+text = "Village, Residential (LVL1)"
 horizontal_alignment = 1
 
-[node name="InfoLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+[node name="CoordsLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "(0, 0)"
+text = "(0, 0, 0)"
 horizontal_alignment = 1
 
 [node name="OccupyButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer"]
