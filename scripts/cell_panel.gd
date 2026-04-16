@@ -11,6 +11,7 @@ var _current_cell: Cell = null
 
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TopRow/TitleLabel
 @onready var coords_label: Label = $PanelContainer/MarginContainer/VBoxContainer/CoordsLabel
+@onready var economy_label: Label = $PanelContainer/MarginContainer/VBoxContainer/EconomyLabel
 @onready var occupy_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/OccupyButton
 @onready var raze_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/RazeButton
 @onready var upgrade_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/UpgradeButton
@@ -27,7 +28,6 @@ func _ready() -> void:
 	build_industrial_btn.pressed.connect(_on_build_industrial_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 
-
 func show_for_cell(
 		cell: Cell,
 		can_occupy: bool, occupy_cost: int,
@@ -41,6 +41,7 @@ func show_for_cell(
 	var r: int = cell.grid_z - (cell.grid_x - (cell.grid_x & 1)) / 2
 	var s: int = -q - r
 	coords_label.text = "(%d, %d, %d)" % [q, r, s]
+	economy_label.text = cell.economy_text()
 	var ctype: String
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:    ctype = "Resource"

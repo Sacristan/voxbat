@@ -303,3 +303,35 @@ func display_name() -> String:
 	if upgrade_cooldown > 0:
 		return "%s (upgrading: %d)" % [level_name(), upgrade_cooldown]
 	return level_name()
+
+
+func economy_text() -> String:
+	if raze_turns_remaining > 0:
+		return ""
+	var idx := cell_level - 1
+	var values: Dictionary = {}
+	match cell_type:
+		CellType.RESOURCE:
+			values["SUP"] = int(Config.get_value("economy.resource_cell_sup"))
+			values["MP"]  = int(Config.get_value("economy.resource_cell_mp"))
+		CellType.RESIDENTIAL:
+			values["MP"]  = int((Config.get_value("economy.residential_cell_mp_per_level")  as Array)[idx])
+			values["SUP"] = int((Config.get_value("economy.residential_cell_sup_per_level") as Array)[idx])
+			values["MAT"] = int((Config.get_value("economy.residential_cell_mat_per_level") as Array)[idx])
+		CellType.INDUSTRY:
+			values["MAT"] = int((Config.get_value("economy.industry_cell_mat_per_level") as Array)[idx])
+			values["MP"]  = int((Config.get_value("economy.industry_cell_mp_per_level")  as Array)[idx])
+			values["SUP"] = int((Config.get_value("economy.industry_cell_sup_per_level") as Array)[idx])
+	var produces: Array[String] = []
+	var consumes: Array[String] = []
+	for key in values:
+		var v: int = values[key]
+		if v > 0:   produces.append("+%d %s" % [v, key])
+		elif v < 0: consumes.append("%d %s" % [v, key])
+	var result := ""
+	if not produces.is_empty():
+		result += "PRODUCES\n" + "\n".join(produces)
+	if not consumes.is_empty():
+		if result != "": result += "\n"
+		result += "CONSUMES\n" + "\n".join(consumes)
+	return result
