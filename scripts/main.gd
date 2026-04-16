@@ -212,6 +212,23 @@ func _raze_cost(cell: Cell) -> int:
 			return costs[cell.cell_level - 1]
 
 
+func _raze_yield_text(cell: Cell) -> String:
+	var yield_turns: int = Config.get_value("raze.resource_yield_turns")
+	match cell.cell_type:
+		Cell.CellType.RESOURCE:
+			var sup: int = int(Config.get_value("economy.resource_cell_sup")) * yield_turns
+			return "+%d SUP" % sup
+		Cell.CellType.INDUSTRY:
+			var mat_vals: Array = Config.get_value("economy.industry_cell_mat_per_level")
+			var mat: int = int(mat_vals[cell.cell_level - 1]) * yield_turns
+			return "+%d MAT" % mat
+		_:  # RESIDENTIAL
+			var mp_vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
+			var pct: int = 100 if cell.owner_index == GameState.current_player_index else Config.get_value("raze.residential_mp_refund_percent")
+			var mp: int = int(mp_vals[cell.cell_level - 1] * pct / 100.0)
+			return "+%d MP" % mp
+
+
 func _upgrade_cost(cell: Cell) -> Dictionary:
 	if cell.cell_level >= cell.max_level() or cell.cell_type == Cell.CellType.RESOURCE:
 		return {"mp": 0, "sup": 0}
@@ -398,7 +415,7 @@ func _on_cell_clicked(cell: Cell) -> void:
 	cell_panel.show_for_cell(
 		cell,
 		_can_occupy(cell), _occupation_cost(cell),
-		_can_raze(cell), _raze_cost(cell), show_raze,
+		_can_raze(cell), _raze_cost(cell), _raze_yield_text(cell), show_raze,
 		_can_upgrade(cell), _upgrade_cost_text(cell), show_upgrade,
 		_can_convert(cell, Cell.CellType.RESIDENTIAL), _convert_cost_text(Cell.CellType.RESIDENTIAL), show_build,
 		_can_convert(cell, Cell.CellType.INDUSTRY), _convert_cost_text(Cell.CellType.INDUSTRY)
@@ -434,7 +451,7 @@ func _on_raze_pressed(cell: Cell) -> void:
 			player.materials += int(mat_vals[cell.cell_level - 1]) * yield_turns
 		Cell.CellType.RESIDENTIAL:
 			var mp_vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
-			var pct: int = Config.get_value("raze.residential_mp_refund_percent")
+			var pct: int = 100 if cell.owner_index == GameState.current_player_index else Config.get_value("raze.residential_mp_refund_percent")
 			player.manpower += int(mp_vals[cell.cell_level - 1] * pct / 100.0)
 	cell.raze_player_index = GameState.current_player_index
 	cell.raze()
