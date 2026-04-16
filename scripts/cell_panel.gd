@@ -58,7 +58,7 @@ func show_for_cell(
 			title_label.text += " ↑%d" % cell.upgrade_cooldown
 	occupy_btn.text = "OCCUPY (%d MP)" % occupy_cost if occupy_cost > 0 else "OCCUPY"
 	occupy_btn.disabled = not can_occupy
-	raze_btn.text = "RAZE (%d MP)" % raze_cost
+	raze_btn.text = "RAZE (%d MP)" % raze_cost if raze_cost > 0 else "RAZE (free)"
 	raze_btn.visible = show_raze
 	raze_btn.disabled = not can_raze
 	upgrade_btn.text = "UPGRADE (%s)" % upgrade_cost_text

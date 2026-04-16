@@ -45,14 +45,14 @@
 	"residential_cell_enemy_cost_multiplier": 2
   },
   "raze": {
-	"self_occupied_mp_cost":                  10,
+	"self_occupied_mp_cost":                  0,
 	"resource_cell_neutral_mp_cost":          10,
 	"resource_cell_enemy_mp_cost":            20,
 	"industry_cell_neutral_mp_per_level":     [10, 20, 35],
 	"industry_cell_enemy_mp_per_level":       [20, 40, 70],
 	"residential_cell_neutral_mp_per_level":  [10, 20, 35, 55],
 	"residential_cell_enemy_mp_per_level":    [20, 40, 70, 110],
-	"residential_mp_refund_percent":          20,
+	"residential_mp_refund_percent":          50,
 	"resource_yield_turns":                   2,
 	"resource_rubble_turns":                  3,
 	"industry_rubble_turns":                  5,
