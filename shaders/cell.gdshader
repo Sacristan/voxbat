@@ -2,6 +2,9 @@ shader_type spatial;
 render_mode unshaded, cull_back, depth_draw_opaque;
 
 uniform vec4 albedo_color : source_color = vec4(0.5, 0.7, 0.3, 1.0);
+// alpha = 0 means unowned; alpha > 0 blends owner color into the cell
+// No source_color hint — passed as raw linear values to avoid gamma double-conversion
+uniform vec4 owner_color = vec4(0.0, 0.0, 0.0, 0.0);
 
 // World-space sun direction (warm light from upper-front-left)
 const vec3 SUN_DIR = vec3(-0.5, 1.8, -0.3);
@@ -18,15 +21,15 @@ void fragment() {
 	// Hard toon bands with warm highlight and cool shadow tint
 	vec3 color;
 	if (ndotl > 0.3) {
-		// Bright warm sunlit face
 		color = saturated * vec3(1.30, 1.22, 1.05);
 	} else if (ndotl > -0.2) {
-		// Neutral mid-tone sides
 		color = saturated * vec3(0.82, 0.80, 0.88);
 	} else {
-		// Cool-tinted shadow
 		color = saturated * vec3(0.42, 0.40, 0.55);
 	}
+
+	// Owner tint applied after shading, uniform across all faces
+	color = mix(color, owner_color.rgb, owner_color.a * 0.275);
 
 	ALBEDO = clamp(color, 0.0, 1.0);
 }

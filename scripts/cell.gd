@@ -212,14 +212,18 @@ func deselect() -> void:
 	if owner_index == -1:
 		_outline_mat.grow_amount = BASE_OUTLINE_GROW
 		_outline_mat.albedo_color = BASE_OUTLINE_COLOR
+		_fill_mat.set_shader_parameter("owner_color", Color(0.0, 0.0, 0.0, 0.0))
 	else:
+		var c := GameState.players[owner_index].color
 		_outline_mat.grow_amount = OUTLINE_GROW
-		_outline_mat.albedo_color = GameState.players[owner_index].color
+		_outline_mat.albedo_color = c
+		_fill_mat.set_shader_parameter("owner_color", Color(c.r, c.g, c.b, 1.0))
 
 
 func claim(player: PlayerData) -> void:
 	owner_index = GameState.players.find(player)
 	_fill_mat.set_shader_parameter("albedo_color", TYPE_COLORS[cell_type])
+	_fill_mat.set_shader_parameter("owner_color", Color(player.color.r, player.color.g, player.color.b, 1.0))
 	_outline_mat.grow_amount = OUTLINE_GROW
 	_outline_mat.albedo_color = player.color
 
@@ -256,6 +260,7 @@ func raze() -> void:
 		CellType.INDUSTRY:    raze_turns_remaining = Config.get_value("raze.industry_rubble_turns")
 		CellType.RESIDENTIAL: raze_turns_remaining = Config.get_value("raze.residential_rubble_turns")
 	_fill_mat.set_shader_parameter("albedo_color", RAZED_COLOR)
+	_fill_mat.set_shader_parameter("owner_color", Color(0.0, 0.0, 0.0, 0.0))
 	_outline_mat.grow_amount = BASE_OUTLINE_GROW
 	_outline_mat.albedo_color = BASE_OUTLINE_COLOR
 	_update_level_visual()
