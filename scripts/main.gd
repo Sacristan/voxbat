@@ -176,9 +176,10 @@ func _occupation_cost(cell: Cell) -> int:
 	var is_enemy := cell.owner_index != -1
 	match cell.cell_type:
 		Cell.CellType.RESIDENTIAL:
-			var base := _residential_mp_output(cell.cell_level)
+			var costs: Array = Config.get_value("occupation.residential_cell_cost_per_level")
+			var base: int = costs[cell.cell_level - 1]
 			if is_enemy:
-				return base * int(Config.get_value("occupation.enemy_residential_cost_multiplier"))
+				return base * int(Config.get_value("occupation.residential_cell_enemy_cost_multiplier"))
 			return base
 		Cell.CellType.INDUSTRY:
 			var costs: Array = Config.get_value("occupation.industry_cell_cost_per_level")

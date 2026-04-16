@@ -1,7 +1,7 @@
 {
   "grid": {
     "size": 5,
-    "industrial_positions": [[2, 0], [0, 3], [2, 4], [4, 1]],
+    "industrial_positions": [[2, 0], [2, 4]],
     "start_positions": [[0, 0], [4, 4]],
     "village_positions": [[0, 2], [4, 2]],
     "start_cell_level": 2
@@ -39,9 +39,10 @@
   "occupation": {
     "resource_cell_neutral_cost":            10,
     "resource_cell_enemy_cost":              20,
-    "industry_cell_cost_per_level":          [15, 20, 25],
+    "industry_cell_cost_per_level":          [20, 35, 55],
     "industry_cell_enemy_cost_multiplier":   2,
-    "enemy_residential_cost_multiplier":     2
+    "residential_cell_cost_per_level":       [15, 30, 50, 75],
+    "residential_cell_enemy_cost_multiplier": 2
   },
   "raze": {
     "self_occupied_mp_cost":                  10,
@@ -49,8 +50,8 @@
     "resource_cell_enemy_mp_cost":            20,
     "industry_cell_neutral_mp_per_level":     [10, 20, 35],
     "industry_cell_enemy_mp_per_level":       [20, 40, 70],
-    "residential_cell_neutral_mp_per_level":  [2, 5, 10, 20],
-    "residential_cell_enemy_mp_per_level":    [4, 10, 20, 40],
+    "residential_cell_neutral_mp_per_level":  [10, 20, 35, 55],
+    "residential_cell_enemy_mp_per_level":    [20, 40, 70, 110],
     "residential_mp_refund_percent":          20,
     "resource_yield_turns":                   2,
     "resource_rubble_turns":                  3,
