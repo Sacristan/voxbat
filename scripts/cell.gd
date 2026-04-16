@@ -61,10 +61,14 @@ func _ready() -> void:
 
 func _create_level_cubes() -> void:
 	if _slice_meshes.is_empty():
-		# Decreasing XZ size bottom→top: 80%, 60%, 40% of cell (0.9)
-		for s in [0.72, 0.54, 0.36]:
-			var m := BoxMesh.new()
-			m.size = Vector3(s, 0.10, s)
+		# Decreasing radius bottom→top: 80%, 60%, 40% of visual hex radius (0.5312)
+		for r in [0.4249, 0.3187, 0.2125]:
+			var m := CylinderMesh.new()
+			m.top_radius = r
+			m.bottom_radius = r
+			m.height = 0.10
+			m.radial_segments = 6
+			m.rings = 1
 			_slice_meshes.append(m)
 
 	# Per-instance materials so color matches cell type; half-transparent
