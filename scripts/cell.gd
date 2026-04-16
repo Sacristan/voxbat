@@ -97,7 +97,7 @@ func _create_level_cubes() -> void:
 
 
 func _update_level_visual() -> void:
-	if cell_type == CellType.RESOURCE or raze_turns_remaining > 0:
+	if cell_type == CellType.RESOURCE:
 		for cube in _level_cubes:
 			cube.visible = false
 		return
@@ -194,6 +194,11 @@ func upgrade() -> void:
 func raze() -> void:
 	upgrade_cooldown = 0
 	owner_index = -1
+	if cell_type != CellType.RESOURCE:
+		if cell_level > 1:
+			cell_level -= 1
+		else:
+			cell_type = CellType.RESOURCE
 	match cell_type:
 		CellType.RESOURCE:    raze_turns_remaining = Config.get_value("raze.resource_rubble_turns")
 		CellType.INDUSTRY:    raze_turns_remaining = Config.get_value("raze.industry_rubble_turns")
