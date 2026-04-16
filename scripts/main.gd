@@ -210,7 +210,7 @@ func _raze_cost(cell: Cell) -> int:
 
 
 func _upgrade_cost(cell: Cell) -> Dictionary:
-	if cell.cell_level >= 3 or cell.cell_type == Cell.CellType.RESOURCE:
+	if cell.cell_level >= cell.max_level() or cell.cell_type == Cell.CellType.RESOURCE:
 		return {"mp": 0, "sup": 0}
 	var idx := cell.cell_level - 1  # 0 = L1→2, 1 = L2→3
 	if cell.cell_type == Cell.CellType.RESIDENTIAL:
@@ -261,7 +261,7 @@ func _can_upgrade(cell: Cell) -> bool:
 		return false
 	if cell.cell_type == Cell.CellType.RESOURCE:
 		return false
-	if cell.cell_level >= 3:
+	if cell.cell_level >= cell.max_level():
 		return false
 	if cell.upgrade_cooldown > 0 or cell.raze_turns_remaining > 0:
 		return false
@@ -350,7 +350,7 @@ func _on_cell_clicked(cell: Cell) -> void:
 	var show_raze := is_adjacent or cell.raze_turns_remaining > 0
 	var show_upgrade := (
 		cell.cell_type != Cell.CellType.RESOURCE
-		and cell.cell_level < 3
+		and cell.cell_level < cell.max_level()
 		and cell.raze_turns_remaining == 0
 		and cell.owner_index == GameState.current_player_index
 	)

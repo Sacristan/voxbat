@@ -25,9 +25,9 @@
   "economy": {
     "resource_cell_mp":                  -1,
     "resource_cell_sup":                  5,
-    "residential_cell_mp_per_level":     [2, 5, 10],
-    "residential_cell_sup_per_level":    [-2, -5, -10],
-    "residential_cell_mat_per_level":    [0, -2, -5],
+    "residential_cell_mp_per_level":     [2, 5, 10, 20],
+    "residential_cell_sup_per_level":    [-2, -5, -10, -20],
+    "residential_cell_mat_per_level":    [0, -2, -5, -10],
     "industry_cell_mp_per_level":        [-2, -3, -5],
     "industry_cell_sup_per_level":        [-4, -8, -15],
     "industry_cell_mat_per_level":       [5, 10, 20],
@@ -49,8 +49,8 @@
     "resource_cell_enemy_mp_cost":            20,
     "industry_cell_neutral_mp_per_level":     [10, 20, 35],
     "industry_cell_enemy_mp_per_level":       [20, 40, 70],
-    "residential_cell_neutral_mp_per_level":  [2, 5, 10],
-    "residential_cell_enemy_mp_per_level":    [4, 10, 20],
+    "residential_cell_neutral_mp_per_level":  [2, 5, 10, 20],
+    "residential_cell_enemy_mp_per_level":    [4, 10, 20, 40],
     "residential_mp_refund_percent":          20,
     "resource_yield_turns":                   2,
     "resource_rubble_turns":                  3,
@@ -58,7 +58,7 @@
     "residential_rubble_turns":               5
   },
   "upgrade": {
-    "residential_mp_costs":  [15, 30],
+    "residential_mp_costs":  [15, 30, 60],
     "industry_sup_costs":    [20, 50],
     "industry_mp_costs":     [20, 30]
   },

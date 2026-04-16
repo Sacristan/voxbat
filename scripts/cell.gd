@@ -62,8 +62,8 @@ func _ready() -> void:
 
 func _create_level_cubes() -> void:
 	if _slice_meshes.is_empty():
-		# Decreasing radius bottom→top: 80%, 60%, 40% of visual hex radius (0.5312)
-		for r in [0.4249, 0.3187, 0.2125]:
+		# Decreasing radius bottom→top: 80%, 60%, 40%, 20% of visual hex radius (0.5312)
+		for r in [0.4249, 0.3187, 0.2125, 0.1063]:
 			var m := CylinderMesh.new()
 			m.top_radius = r
 			m.bottom_radius = r
@@ -81,8 +81,9 @@ func _create_level_cubes() -> void:
 		Vector3(0.0, 0.50, 0.0),
 		Vector3(0.0, 0.66, 0.0),
 		Vector3(0.0, 0.82, 0.0),
+		Vector3(0.0, 0.98, 0.0),
 	]
-	for i in 3:
+	for i in 4:
 		var mat := StandardMaterial3D.new()
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -101,7 +102,7 @@ func _update_level_visual() -> void:
 		for cube in _level_cubes:
 			cube.visible = false
 		return
-	for i in 3:
+	for i in _level_cubes.size():
 		_level_cubes[i].visible = (i < cell_level)
 
 
@@ -227,8 +228,16 @@ func level_name() -> String:
 			match cell_level:
 				1: return "Village"
 				2: return "Town"
-				3: return "Metropolis"
+				3: return "City"
+				4: return "Metropolis"
 	return "Unknown"
+
+
+func max_level() -> int:
+	match cell_type:
+		CellType.RESIDENTIAL: return 4
+		CellType.INDUSTRY:    return 3
+	return 1
 
 
 func display_name() -> String:
