@@ -1,81 +1,81 @@
 {
   "grid": {
-    "size": 5,
-    "industrial_positions": [[2, 0], [2, 4]],
-    "start_positions": [[0, 0], [4, 4]],
-    "village_positions": [[0, 2], [4, 2]],
-    "start_cell_level": 2
+	"size": 5,
+	"industrial_positions": [[2, 0], [2, 4]],
+	"start_positions": [[0, 0], [4, 4]],
+	"village_positions": [[1, 2], [3, 1]],
+	"start_cell_level": 2
   },
   "players": [
-    {
-      "name": "Player A",
-      "color": [1.0, 0.15, 0.15],
-      "manpower": 100,
-      "supplies": 100,
-      "materials": 50
-    },
-    {
-      "name": "Player B",
-      "color": [0.15, 0.35, 1.0],
-      "manpower": 100,
-      "supplies": 100,
-      "materials": 50
-    }
+	{
+	  "name": "Player A",
+	  "color": [1.0, 0.15, 0.15],
+	  "manpower": 100,
+	  "supplies": 100,
+	  "materials": 50
+	},
+	{
+	  "name": "Player B",
+	  "color": [0.15, 0.35, 1.0],
+	  "manpower": 100,
+	  "supplies": 100,
+	  "materials": 50
+	}
   ],
   "economy": {
-    "resource_cell_mp":                  -1,
-    "resource_cell_sup":                  5,
-    "residential_cell_mp_per_level":     [2, 5, 10, 20],
-    "residential_cell_sup_per_level":    [-2, -5, -10, -20],
-    "residential_cell_mat_per_level":    [0, -2, -5, -10],
-    "industry_cell_mp_per_level":        [-2, -3, -5],
-    "industry_cell_sup_per_level":        [-4, -8, -15],
-    "industry_cell_mat_per_level":       [5, 10, 20],
-    "zero_supply_mp_penalty":            -10,
-    "zero_material_mp_penalty":          -10,
-    "starvation_turns_to_lose":           3,
-    "upgrade_cooldown_turns":             3
+	"resource_cell_mp":                  -1,
+	"resource_cell_sup":                  5,
+	"residential_cell_mp_per_level":     [2, 5, 10, 20],
+	"residential_cell_sup_per_level":    [-2, -5, -10, -20],
+	"residential_cell_mat_per_level":    [0, -2, -5, -10],
+	"industry_cell_mp_per_level":        [-2, -3, -5],
+	"industry_cell_sup_per_level":        [-4, -8, -15],
+	"industry_cell_mat_per_level":       [5, 10, 20],
+	"zero_supply_mp_penalty":            -10,
+	"zero_material_mp_penalty":          -10,
+	"starvation_turns_to_lose":           3,
+	"upgrade_cooldown_turns":             3
   },
   "occupation": {
-    "resource_cell_neutral_cost":            10,
-    "resource_cell_enemy_cost":              20,
-    "industry_cell_cost_per_level":          [20, 35, 55],
-    "industry_cell_enemy_cost_multiplier":   2,
-    "residential_cell_cost_per_level":       [15, 30, 50, 75],
-    "residential_cell_enemy_cost_multiplier": 2
+	"resource_cell_neutral_cost":            10,
+	"resource_cell_enemy_cost":              20,
+	"industry_cell_cost_per_level":          [20, 35, 55],
+	"industry_cell_enemy_cost_multiplier":   2,
+	"residential_cell_cost_per_level":       [15, 30, 50, 75],
+	"residential_cell_enemy_cost_multiplier": 2
   },
   "raze": {
-    "self_occupied_mp_cost":                  10,
-    "resource_cell_neutral_mp_cost":          10,
-    "resource_cell_enemy_mp_cost":            20,
-    "industry_cell_neutral_mp_per_level":     [10, 20, 35],
-    "industry_cell_enemy_mp_per_level":       [20, 40, 70],
-    "residential_cell_neutral_mp_per_level":  [10, 20, 35, 55],
-    "residential_cell_enemy_mp_per_level":    [20, 40, 70, 110],
-    "residential_mp_refund_percent":          20,
-    "resource_yield_turns":                   2,
-    "resource_rubble_turns":                  3,
-    "industry_rubble_turns":                  5,
-    "residential_rubble_turns":               5
+	"self_occupied_mp_cost":                  10,
+	"resource_cell_neutral_mp_cost":          10,
+	"resource_cell_enemy_mp_cost":            20,
+	"industry_cell_neutral_mp_per_level":     [10, 20, 35],
+	"industry_cell_enemy_mp_per_level":       [20, 40, 70],
+	"residential_cell_neutral_mp_per_level":  [10, 20, 35, 55],
+	"residential_cell_enemy_mp_per_level":    [20, 40, 70, 110],
+	"residential_mp_refund_percent":          20,
+	"resource_yield_turns":                   2,
+	"resource_rubble_turns":                  3,
+	"industry_rubble_turns":                  5,
+	"residential_rubble_turns":               5
   },
   "upgrade": {
-    "residential_mp_costs":  [15, 30, 60],
-    "industry_sup_costs":    [20, 50],
-    "industry_mp_costs":     [20, 30]
+	"residential_mp_costs":  [15, 30, 60],
+	"industry_sup_costs":    [20, 50],
+	"industry_mp_costs":     [20, 30]
   },
   "convert": {
-    "to_residential_sup_cost": 20,
-    "to_residential_mp_cost":  10,
-    "to_industrial_sup_cost":  30,
-    "to_industrial_mp_cost":   20
+	"to_residential_sup_cost": 20,
+	"to_residential_mp_cost":  10,
+	"to_industrial_sup_cost":  30,
+	"to_industrial_mp_cost":   20
   },
   "camera": {
-    "pan_speed":     15.0,
-    "zoom_speed":    3.0,
-    "min_zoom":      8.0,
-    "max_zoom":      60.0,
-    "angle_deg":     50.0,
-    "default_zoom":  28.0,
-    "player_angles": [-135.0, 45.0]
+	"pan_speed":     15.0,
+	"zoom_speed":    3.0,
+	"min_zoom":      8.0,
+	"max_zoom":      60.0,
+	"angle_deg":     50.0,
+	"default_zoom":  28.0,
+	"player_angles": [-135.0, 45.0]
   }
 }
