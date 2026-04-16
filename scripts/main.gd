@@ -370,6 +370,8 @@ func _tick_timers(player_idx: int) -> void:
 			# Upgrade cooldown counts only on the owning player's turns
 			if cell.upgrade_cooldown > 0 and cell.owner_index == player_idx:
 				cell.upgrade_cooldown -= 1
+				if cell.upgrade_cooldown == 0:
+					cell.set_upgrading(false)
 
 
 # --- Input handlers ---

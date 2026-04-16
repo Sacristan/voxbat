@@ -37,6 +37,9 @@ var _shortage_mat: StandardMaterial3D
 var _shortage_tween: Tween
 var _is_shortage: bool = false
 
+var _upgrading_label: Label3D
+var _upgrading_cube_tween: Tween
+
 static var _slice_meshes: Array = []
 
 
@@ -58,6 +61,7 @@ func _ready() -> void:
 	_create_level_cubes()
 	_update_level_visual()
 	_create_shortage_indicator()
+	_create_upgrading_indicator()
 
 
 func _create_level_cubes() -> void:
@@ -158,6 +162,37 @@ func _set_shortage_alpha(alpha: float) -> void:
 	_shortage_mat.albedo_color = Color(1.0, 0.0, 0.0, alpha)
 
 
+func _create_upgrading_indicator() -> void:
+	_upgrading_label = Label3D.new()
+	_upgrading_label.text = "Upgrading"
+	_upgrading_label.font_size = 28
+	_upgrading_label.modulate = Color(0.0, 1.0, 1.0)
+	_upgrading_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_upgrading_label.no_depth_test = true
+	_upgrading_label.position = Vector3(0.0, 1.6, 0.0)
+	_upgrading_label.visible = false
+	add_child(_upgrading_label)
+
+
+func set_upgrading(active: bool) -> void:
+	_upgrading_label.visible = active
+	if _upgrading_cube_tween != null:
+		_upgrading_cube_tween.kill()
+		_upgrading_cube_tween = null
+	if active and cell_level >= 1 and cell_level <= _level_cubes.size():
+		var top_cube: MeshInstance3D = _level_cubes[cell_level - 1]
+		_upgrading_cube_tween = create_tween()
+		_upgrading_cube_tween.set_loops()
+		_upgrading_cube_tween.tween_property(top_cube.material_override, "albedo_color:a", 1.0, 1.2).from(0.0)
+		_upgrading_cube_tween.tween_property(top_cube.material_override, "albedo_color:a", 0.0, 1.2)
+	else:
+		# Restore normal alpha on the cube that was flashing
+		if cell_level >= 1 and cell_level <= _level_cubes.size():
+			var top_cube: MeshInstance3D = _level_cubes[cell_level - 1]
+			var c: Color = top_cube.material_override.albedo_color
+			top_cube.material_override.albedo_color = Color(c.r, c.g, c.b, 0.5)
+
+
 func _input_event(_camera: Camera3D, event: InputEvent,
 		_position: Vector3, _normal: Vector3, _shape_idx: int) -> void:
 	if event is InputEventMouseButton:
@@ -190,6 +225,7 @@ func upgrade() -> void:
 	cell_level += 1
 	upgrade_cooldown = Config.get_value("economy.upgrade_cooldown_turns")
 	_update_level_visual()
+	set_upgrading(true)
 
 
 func convert_to(new_type: CellType) -> void:
@@ -201,6 +237,7 @@ func convert_to(new_type: CellType) -> void:
 	for cube in _level_cubes:
 		cube.material_override.albedo_color = slice_color
 	_update_level_visual()
+	set_upgrading(true)
 
 
 func raze() -> void:
