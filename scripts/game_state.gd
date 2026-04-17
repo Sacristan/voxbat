@@ -31,6 +31,18 @@ func my_player_index() -> int:
 	return 0 if is_host else 1
 
 
+func reset() -> void:
+	current_player_index = 0
+	has_occupied_this_turn = false
+	var pcfg: Array = Config.get_value("players")
+	for i in players.size():
+		var pd: Dictionary = pcfg[i]
+		players[i].manpower = pd.get("manpower", 100)
+		players[i].supplies = pd.get("supplies", 100)
+		players[i].materials = pd.get("materials", 100)
+		players[i].starvation_turns = 0
+
+
 func current_player() -> PlayerData:
 	return players[current_player_index]
 
