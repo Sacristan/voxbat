@@ -7,6 +7,10 @@ var current_player_index: int = 0
 var has_occupied_this_turn: bool = false
 var god_mode: bool = false
 
+var is_multiplayer: bool = false
+var is_host: bool = false
+var my_peer_id: int = 1
+
 
 func _ready() -> void:
 	var pcfg: Array = Config.get_value("players")
@@ -19,6 +23,12 @@ func _ready() -> void:
 		p.supplies  = pd.get("supplies",  100)
 		p.materials = pd.get("materials", 100)
 		players.append(p)
+
+
+func my_player_index() -> int:
+	if not is_multiplayer:
+		return current_player_index
+	return 0 if is_host else 1
 
 
 func current_player() -> PlayerData:

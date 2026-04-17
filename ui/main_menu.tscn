@@ -36,3 +36,8 @@ horizontal_alignment = 1
 layout_mode = 2
 custom_minimum_size = Vector2(240, 48)
 text = "LOCAL VERSUS"
+
+[node name="MultiplayerVersusButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 48)
+text = "MULTIPLAYER VERSUS"

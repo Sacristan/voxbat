@@ -14,7 +14,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "mcp__godot__add_node",
       "Bash(git *)",
-      "mcp__godot__create_scene"
+      "mcp__godot__create_scene",
+      "mcp__godot__get_uid"
     ]
   }
 }

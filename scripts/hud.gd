@@ -45,6 +45,10 @@ func update_resources(player: PlayerData, mp_delta: int, sup_delta: int, mat_del
 	_set_shortage_label(materials_label, player.materials, mat_delta)
 
 
+func set_end_turn_interactable(enabled: bool) -> void:
+	end_turn_btn.disabled = not enabled
+
+
 func show_game_over(winner_name: String) -> void:
 	game_over_label.text = winner_name + " wins!"
 	game_over_label.visible = true
