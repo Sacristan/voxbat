@@ -7,8 +7,13 @@
       "mcp__godot__stop_project",
       "Bash(sed:*)",
       "WebFetch(domain:external-content.duckduckgo.com)",
-      "Bash(cat)",
-      "Read(//tmp/**)"
+      "Bash(gh api *)",
+      "Bash(gh repo *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__godot__add_node",
+      "Bash(git *)"
     ]
   }
 }

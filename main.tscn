@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://bpqrst123hud1" path="res://ui/hud.tscn" id="2_hud001"]
 [ext_resource type="Script" uid="uid://dtd4k61oh6dd2" path="res://scripts/camera_controller.gd" id="3_cam01"]
 [ext_resource type="PackedScene" path="res://ui/cell_panel.tscn" id="4_cp001"]
+[ext_resource type="PackedScene" path="res://addons/ahhnold_console/console.tscn" id="5_con01"]
 
 [node name="Main" type="Node3D" unique_id=1958458832]
 script = ExtResource("1_main01")
@@ -23,3 +24,5 @@ shadow_enabled = true
 [node name="HUD" parent="." unique_id=508543658 instance=ExtResource("2_hud001")]
 
 [node name="CellPanel" parent="." unique_id=1362886049 instance=ExtResource("4_cp001")]
+
+[node name="Console" parent="." unique_id=1111222333 instance=ExtResource("5_con01")]
