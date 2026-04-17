@@ -32,6 +32,7 @@ func _ready() -> void:
 	for p in Config.get_value("grid.village_positions"):
 		_village_positions.append(Vector2i(p[0], p[1]))
 
+	GameState.reset()
 	get_viewport().physics_object_picking = true
 	_spawn_grid()
 	_place_starting_cells()
@@ -386,14 +387,35 @@ func _calc_resource_deltas(player_idx: int) -> Dictionary:
 func _apply_turn_effects(player_idx: int) -> String:
 	var player := GameState.players[player_idx]
 	var connected := _get_connected_positions(player_idx)
+	# Pass 1: apply non-residential income so starvation check in pass 2
+	# sees full available resources regardless of grid iteration order.
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			if cell.cell_type == Cell.CellType.RESIDENTIAL:
+				continue
+			var mp_delta := _cell_mp(cell)
+			var sup_delta := _cell_sup(cell)
+			var mat_delta := _cell_mat(cell)
+			if GameState.god_mode:
+				mp_delta = max(0, mp_delta)
+				sup_delta = max(0, sup_delta)
+				mat_delta = max(0, mat_delta)
+			player.manpower = max(0, player.manpower + mp_delta)
+			player.supplies = max(0, player.supplies + sup_delta)
+			player.materials = max(0, player.materials + mat_delta)
+	# Pass 2: check starvation against post-income resources, then apply residential.
 	var residential_starved := false
 	for z in GRID_SIZE:
 		for x in GRID_SIZE:
 			var cell: Cell = grid[z][x]
 			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
 				continue
-			# Starvation check before deducting (only active residential)
-			if cell.cell_type == Cell.CellType.RESIDENTIAL and cell.upgrade_cooldown == 0:
+			if cell.cell_type != Cell.CellType.RESIDENTIAL:
+				continue
+			if cell.upgrade_cooldown == 0:
 				var sup_need := -_cell_sup(cell)
 				var mat_need := -_cell_mat(cell)
 				if player.supplies < sup_need or player.materials < mat_need:
