@@ -13,6 +13,9 @@ var _village_positions: Array = []
 var grid: Array = []
 var _selected_cell: Cell = null
 var _is_game_over: bool = false
+var _reachable_cells: Array = []
+var _reachable_tween: Tween = null
+const SHOW_REACHABLE_HIGHLIGHTS := false
 
 @onready var grid_root: Node3D = $GridRoot
 @onready var camera_rig = $CameraRig
@@ -45,6 +48,7 @@ func _ready() -> void:
 	cell_panel.panel_closed.connect(_on_panel_closed)
 	ConsoleController.register_command("god", _cmd_god, "Toggle god mode (resources not consumed)")
 	_update_hud()
+	_refresh_reachable_highlights()
 
 
 func _spawn_grid() -> void:
@@ -117,6 +121,36 @@ func _has_adjacent_owned(gx: int, gz: int, player_idx: int) -> bool:
 		if grid[npos.y][npos.x].owner_index == player_idx:
 			return true
 	return false
+
+
+func _clear_reachable_highlights() -> void:
+	if _reachable_tween != null:
+		_reachable_tween.kill()
+		_reachable_tween = null
+	for cell in _reachable_cells:
+		cell.set_reachable(false)
+	_reachable_cells.clear()
+
+
+func _refresh_reachable_highlights() -> void:
+	if not SHOW_REACHABLE_HIGHLIGHTS:
+		return
+	_clear_reachable_highlights()
+	var player_idx := GameState.current_player_index
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.owner_index == player_idx:
+				continue
+			if cell.raze_turns_remaining == 0 and _has_adjacent_owned(x, z, player_idx):
+				cell.set_reachable(true)
+				_reachable_cells.append(cell)
+	if not _reachable_cells.is_empty():
+		Cell._reachable_outline_mat.albedo_color = Cell.REACHABLE_COLOR
+		_reachable_tween = create_tween()
+		_reachable_tween.set_loops()
+		_reachable_tween.tween_property(Cell._reachable_outline_mat, "albedo_color", Cell.REACHABLE_COLOR_DIM, 1.8)
+		_reachable_tween.tween_property(Cell._reachable_outline_mat, "albedo_color", Cell.REACHABLE_COLOR, 1.8)
 
 
 # --- Per-cell resource helpers (return 0 during upgrade cooldown) ---
@@ -444,6 +478,7 @@ func _on_occupy_pressed(cell: Cell) -> void:
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
 	_update_hud()
+	_clear_reachable_highlights()
 	if is_enemy_residential:
 		_is_game_over = true
 		hud.show_game_over(player.player_name)
@@ -469,6 +504,7 @@ func _on_raze_pressed(cell: Cell) -> void:
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
 	_update_hud()
+	_clear_reachable_highlights()
 
 
 func _on_upgrade_pressed(cell: Cell) -> void:
@@ -533,6 +569,7 @@ func _on_end_turn() -> void:
 func _on_turn_changed(_player: PlayerData) -> void:
 	camera_rig.focus_for_player(GameState.current_player_index)
 	_update_hud()
+	_refresh_reachable_highlights()
 
 
 func _on_resource_info_requested(which: String) -> void:

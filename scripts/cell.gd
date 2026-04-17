@@ -22,8 +22,10 @@ const TYPE_COLORS: Dictionary = {
 	2: Color(0.05, 0.82, 0.95),  # RESIDENTIAL - bright cyan
 }
 
-const SELECTED_COLOR  := Color(1.0, 0.9, 0.0)
-const RAZED_COLOR     := Color(0.22, 0.20, 0.18)
+const SELECTED_COLOR      := Color(1.0, 0.9, 0.0)
+const REACHABLE_COLOR     := Color(1.0, 1.0, 1.0)
+const REACHABLE_COLOR_DIM := Color(0.28, 0.28, 0.28)
+const RAZED_COLOR         := Color(0.22, 0.20, 0.18)
 const OUTLINE_GROW    := 0.08
 const BASE_OUTLINE_GROW  := 0.0525
 const BASE_OUTLINE_COLOR := Color(0.06, 0.05, 0.08)
@@ -32,6 +34,7 @@ const _CELL_SHADER := preload("res://shaders/cell.gdshader")
 
 var _fill_mat: ShaderMaterial
 var _outline_mat: StandardMaterial3D
+var _is_reachable: bool = false
 var _level_cubes: Array = []
 var _shortage_overlay: MeshInstance3D
 var _shortage_label: Label3D
@@ -43,6 +46,7 @@ var _upgrading_label: Label3D
 var _upgrading_cube_tween: Tween
 
 static var _slice_meshes: Array = []
+static var _reachable_outline_mat: StandardMaterial3D = null
 
 
 func _ready() -> void:
@@ -56,6 +60,14 @@ func _ready() -> void:
 	_outline_mat.grow = true
 	_outline_mat.grow_amount = BASE_OUTLINE_GROW
 	_outline_mat.albedo_color = BASE_OUTLINE_COLOR
+
+	if _reachable_outline_mat == null:
+		_reachable_outline_mat = StandardMaterial3D.new()
+		_reachable_outline_mat.cull_mode = BaseMaterial3D.CULL_FRONT
+		_reachable_outline_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_reachable_outline_mat.grow = true
+		_reachable_outline_mat.grow_amount = OUTLINE_GROW
+		_reachable_outline_mat.albedo_color = REACHABLE_COLOR
 
 	_fill_mat.next_pass = _outline_mat
 	mesh_instance.set_surface_override_material(0, _fill_mat)
@@ -204,23 +216,47 @@ func _input_event(_camera: Camera3D, event: InputEvent,
 
 
 func select() -> void:
+	_fill_mat.next_pass = _outline_mat
 	_outline_mat.grow_amount = OUTLINE_GROW
 	_outline_mat.albedo_color = SELECTED_COLOR
 
 
 func deselect() -> void:
-	if owner_index == -1:
+	if _is_reachable:
+		_fill_mat.next_pass = _reachable_outline_mat
+		if owner_index == -1:
+			_fill_mat.set_shader_parameter("owner_color", Color(0.0, 0.0, 0.0, 0.0))
+	elif owner_index == -1:
+		_fill_mat.next_pass = _outline_mat
 		_outline_mat.grow_amount = BASE_OUTLINE_GROW
 		_outline_mat.albedo_color = BASE_OUTLINE_COLOR
 		_fill_mat.set_shader_parameter("owner_color", Color(0.0, 0.0, 0.0, 0.0))
 	else:
+		_fill_mat.next_pass = _outline_mat
 		var c := GameState.players[owner_index].color
 		_outline_mat.grow_amount = OUTLINE_GROW
 		_outline_mat.albedo_color = c
 		_fill_mat.set_shader_parameter("owner_color", Color(c.r, c.g, c.b, 1.0))
 
 
+func set_reachable(reachable: bool) -> void:
+	_is_reachable = reachable
+	if reachable:
+		_fill_mat.next_pass = _reachable_outline_mat
+	else:
+		_fill_mat.next_pass = _outline_mat
+		if owner_index == -1:
+			_outline_mat.grow_amount = BASE_OUTLINE_GROW
+			_outline_mat.albedo_color = BASE_OUTLINE_COLOR
+		else:
+			var c := GameState.players[owner_index].color
+			_outline_mat.grow_amount = OUTLINE_GROW
+			_outline_mat.albedo_color = c
+
+
 func claim(player: PlayerData) -> void:
+	_is_reachable = false
+	_fill_mat.next_pass = _outline_mat
 	owner_index = GameState.players.find(player)
 	_fill_mat.set_shader_parameter("albedo_color", TYPE_COLORS[cell_type])
 	_fill_mat.set_shader_parameter("owner_color", Color(player.color.r, player.color.g, player.color.b, 1.0))
