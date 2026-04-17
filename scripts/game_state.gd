@@ -5,6 +5,7 @@ signal turn_changed(player: PlayerData)
 var players: Array[PlayerData] = []
 var current_player_index: int = 0
 var has_occupied_this_turn: bool = false
+var god_mode: bool = false
 
 
 func _ready() -> void:

@@ -43,6 +43,7 @@ func _ready() -> void:
 	cell_panel.build_residential_pressed.connect(_on_build_residential_pressed)
 	cell_panel.build_industrial_pressed.connect(_on_build_industrial_pressed)
 	cell_panel.panel_closed.connect(_on_panel_closed)
+	ConsoleController.register_command("god", _cmd_god, "Toggle god mode (resources not consumed)")
 	_update_hud()
 
 
@@ -358,13 +359,21 @@ func _apply_turn_effects(player_idx: int) -> String:
 				var mat_need := -_cell_mat(cell)
 				if player.supplies < sup_need or player.materials < mat_need:
 					residential_starved = true
-			player.manpower = max(0, player.manpower + _cell_mp(cell))
-			player.supplies = max(0, player.supplies + _cell_sup(cell))
-			player.materials = max(0, player.materials + _cell_mat(cell))
-	if player.supplies == 0:
-		player.manpower = max(0, player.manpower + Config.get_value("economy.zero_supply_mp_penalty"))
-	if player.materials == 0:
-		player.manpower = max(0, player.manpower + Config.get_value("economy.zero_material_mp_penalty"))
+			var mp_delta := _cell_mp(cell)
+			var sup_delta := _cell_sup(cell)
+			var mat_delta := _cell_mat(cell)
+			if GameState.god_mode:
+				mp_delta = max(0, mp_delta)
+				sup_delta = max(0, sup_delta)
+				mat_delta = max(0, mat_delta)
+			player.manpower = max(0, player.manpower + mp_delta)
+			player.supplies = max(0, player.supplies + sup_delta)
+			player.materials = max(0, player.materials + mat_delta)
+	if not GameState.god_mode:
+		if player.supplies == 0:
+			player.manpower = max(0, player.manpower + Config.get_value("economy.zero_supply_mp_penalty"))
+		if player.materials == 0:
+			player.manpower = max(0, player.manpower + Config.get_value("economy.zero_material_mp_penalty"))
 	if residential_starved:
 		player.starvation_turns += 1
 		var limit: int = Config.get_value("economy.starvation_turns_to_lose")
@@ -429,7 +438,8 @@ func _on_occupy_pressed(cell: Cell) -> void:
 		and cell.owner_index != GameState.current_player_index
 		and cell.cell_type == Cell.CellType.RESIDENTIAL
 	)
-	player.manpower -= _occupation_cost(cell)
+	if not GameState.god_mode:
+		player.manpower -= _occupation_cost(cell)
 	cell.claim(player)
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
@@ -441,7 +451,8 @@ func _on_occupy_pressed(cell: Cell) -> void:
 
 func _on_raze_pressed(cell: Cell) -> void:
 	var player := GameState.current_player()
-	player.manpower -= _raze_cost(cell)
+	if not GameState.god_mode:
+		player.manpower -= _raze_cost(cell)
 	var yield_turns: int = Config.get_value("raze.resource_yield_turns")
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
@@ -463,8 +474,9 @@ func _on_raze_pressed(cell: Cell) -> void:
 func _on_upgrade_pressed(cell: Cell) -> void:
 	var cost := _upgrade_cost(cell)
 	var player := GameState.current_player()
-	player.manpower -= cost["mp"]
-	player.supplies -= cost["sup"]
+	if not GameState.god_mode:
+		player.manpower -= cost["mp"]
+		player.supplies -= cost["sup"]
 	cell.upgrade()
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
@@ -474,8 +486,9 @@ func _on_upgrade_pressed(cell: Cell) -> void:
 func _on_build_residential_pressed(cell: Cell) -> void:
 	var cost := _convert_cost(Cell.CellType.RESIDENTIAL)
 	var player := GameState.current_player()
-	player.manpower -= cost["mp"]
-	player.supplies -= cost["sup"]
+	if not GameState.god_mode:
+		player.manpower -= cost["mp"]
+		player.supplies -= cost["sup"]
 	cell.convert_to(Cell.CellType.RESIDENTIAL)
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
@@ -485,8 +498,9 @@ func _on_build_residential_pressed(cell: Cell) -> void:
 func _on_build_industrial_pressed(cell: Cell) -> void:
 	var cost := _convert_cost(Cell.CellType.INDUSTRY)
 	var player := GameState.current_player()
-	player.manpower -= cost["mp"]
-	player.supplies -= cost["sup"]
+	if not GameState.god_mode:
+		player.manpower -= cost["mp"]
+		player.supplies -= cost["sup"]
 	cell.convert_to(Cell.CellType.INDUSTRY)
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
@@ -613,6 +627,12 @@ func _update_shortage_indicators() -> void:
 					res.append("MAT")
 				if not res.is_empty():
 					cell.set_shortage(true, ", ".join(res) + " Shortage")
+
+
+func _cmd_god(_args: Array) -> void:
+	GameState.god_mode = not GameState.god_mode
+	var state := "ON" if GameState.god_mode else "OFF"
+	ConsoleController.print_line("God mode: [b]%s[/b] — resources %s" % [state, "not consumed" if GameState.god_mode else "consumed normally"])
 
 
 func _update_hud() -> void:
