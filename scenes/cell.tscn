@@ -17,7 +17,6 @@ height = 1.0
 script = ExtResource("1_cell01")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-rotation_degrees = Vector3(0, 30, 0)
 mesh = SubResource("CylinderMesh_cell01")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
