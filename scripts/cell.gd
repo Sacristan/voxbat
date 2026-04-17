@@ -302,6 +302,7 @@ func convert_to(new_type: CellType) -> void:
 
 func raze() -> void:
 	upgrade_cooldown = 0
+	set_upgrading(false)
 	owner_index = -1
 	if cell_type != CellType.RESOURCE:
 		if cell_level > 1:
