@@ -282,18 +282,21 @@ func _upgrade_cost(cell: Cell) -> Dictionary:
 	var idx := cell.cell_level - 1  # 0 = L1→2, 1 = L2→3
 	if cell.cell_type == Cell.CellType.RESIDENTIAL:
 		var mp_costs: Array = Config.get_value("upgrade.residential_mp_costs")
-		return {"mp": mp_costs[idx], "sup": 0}
+		var mat_costs: Array = Config.get_value("upgrade.residential_mat_costs")
+		return {"mp": mp_costs[idx], "sup": 0, "mat": mat_costs[idx]}
 	elif cell.cell_type == Cell.CellType.INDUSTRY:
 		var sup_costs: Array = Config.get_value("upgrade.industry_sup_costs")
 		var mp_costs: Array = Config.get_value("upgrade.industry_mp_costs")
-		return {"mp": mp_costs[idx], "sup": sup_costs[idx]}
-	return {"mp": 0, "sup": 0}
+		return {"mp": mp_costs[idx], "sup": sup_costs[idx], "mat": 0}
+	return {"mp": 0, "sup": 0, "mat": 0}
 
 
 func _upgrade_cost_text(cell: Cell) -> String:
 	var cost := _upgrade_cost(cell)
 	if cost["sup"] > 0:
 		return "%d SUP / %d MP" % [cost["sup"], cost["mp"]]
+	if cost["mat"] > 0:
+		return "%d MAT / %d MP" % [cost["mat"], cost["mp"]]
 	return "%d MP" % cost["mp"]
 
 
@@ -365,7 +368,7 @@ func _can_upgrade(cell: Cell) -> bool:
 		return false
 	var cost := _upgrade_cost(cell)
 	var player := GameState.current_player()
-	return player.manpower >= cost["mp"] and player.supplies >= cost["sup"]
+	return player.manpower >= cost["mp"] and player.supplies >= cost["sup"] and player.materials >= cost["mat"]
 
 
 # --- Economy ---
@@ -525,6 +528,7 @@ func _on_occupy_pressed(cell: Cell) -> void:
 	if is_enemy_residential:
 		_is_game_over = true
 		hud.show_game_over(player.player_name)
+		_maybe_auto_restart()
 
 
 func _on_raze_pressed(cell: Cell) -> void:
@@ -557,6 +561,7 @@ func _on_upgrade_pressed(cell: Cell) -> void:
 	if not GameState.god_mode:
 		player.manpower -= cost["mp"]
 		player.supplies -= cost["sup"]
+		player.materials -= cost["mat"]
 	cell.upgrade()
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
@@ -606,8 +611,16 @@ func _do_end_turn() -> void:
 	if winner != "":
 		_is_game_over = true
 		hud.show_game_over(winner)
+		_maybe_auto_restart()
 		return
 	GameState.end_turn()
+
+
+func _maybe_auto_restart() -> void:
+	if GameState.ai_flags[0] and GameState.ai_flags[1]:
+		await get_tree().create_timer(3.0).timeout
+		GameState.reset()
+		get_tree().change_scene_to_file("res://main.tscn")
 
 
 func _schedule_ai_turn() -> void:

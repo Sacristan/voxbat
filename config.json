@@ -12,14 +12,14 @@
 	  "color": [1.0, 0.15, 0.15],
 	  "manpower": 100,
 	  "supplies": 100,
-	  "materials": 75
+	  "materials": 35
 	},
 	{
 	  "name": "Player B",
 	  "color": [0.15, 0.35, 1.0],
 	  "manpower": 100,
 	  "supplies": 100,
-	  "materials": 75
+	  "materials": 35
 	}
   ],
   "economy": {
@@ -27,10 +27,10 @@
 	"resource_cell_sup":                  3,
 	"residential_cell_mp_per_level":     [2, 5, 10, 20],
 	"residential_cell_sup_per_level":    [-2, -5, -10, -20],
-	"residential_cell_mat_per_level":    [0, -1, -3, -6],
+	"residential_cell_mat_per_level":    [0, -2, -5, -10],
 	"industry_cell_mp_per_level":        [-2, -3, -5],
-	"industry_cell_sup_per_level":        [-4, -8, -15],
-	"industry_cell_mat_per_level":       [5, 10, 20],
+	"industry_cell_sup_per_level":        [-3, -5, -8],
+	"industry_cell_mat_per_level":       [5, 13, 28],
 	"zero_supply_mp_penalty":            -10,
 	"zero_material_mp_penalty":          -10,
 	"starvation_turns_to_lose":           3,
@@ -60,14 +60,15 @@
   },
   "upgrade": {
 	"residential_mp_costs":  [15, 30, 60],
+	"residential_mat_costs": [10, 25, 50],
 	"industry_sup_costs":    [20, 50],
 	"industry_mp_costs":     [20, 30]
   },
   "convert": {
 	"to_residential_sup_cost": 20,
 	"to_residential_mp_cost":  10,
-	"to_industrial_sup_cost":  30,
-	"to_industrial_mp_cost":   20
+	"to_industrial_sup_cost":  20,
+	"to_industrial_mp_cost":   15
   },
   "ai": {
     "player_personalities": ["random", "random"]
