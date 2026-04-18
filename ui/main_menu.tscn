@@ -37,6 +37,16 @@ layout_mode = 2
 custom_minimum_size = Vector2(240, 48)
 text = "LOCAL VERSUS"
 
+[node name="VsAIButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 48)
+text = "VS AI"
+
+[node name="AIvsAIButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 48)
+text = "AI VS AI"
+
 [node name="MultiplayerVersusButton" type="Button" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(240, 48)

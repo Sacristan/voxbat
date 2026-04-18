@@ -22,6 +22,7 @@ const SHOW_REACHABLE_HIGHLIGHTS := false
 @onready var hud = $HUD
 @onready var cell_panel = $CellPanel
 @onready var game_net = $GameNet
+@onready var ai_player = $AiPlayer
 
 
 func _ready() -> void:
@@ -49,8 +50,12 @@ func _ready() -> void:
 	cell_panel.build_industrial_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("build_industrial", cell))
 	cell_panel.panel_closed.connect(_on_panel_closed)
 	ConsoleController.register_command("god", _cmd_god, "Toggle god mode (resources not consumed)")
+	ConsoleController.register_command("aivsai", _cmd_aivsai, "Make both players AI-controlled")
+	ai_player.setup(self)
 	_update_hud()
 	_refresh_reachable_highlights()
+	if GameState.ai_flags[GameState.current_player_index]:
+		_schedule_ai_turn()
 
 
 func _spawn_grid() -> void:
@@ -599,10 +604,17 @@ func _do_end_turn() -> void:
 	GameState.end_turn()
 
 
+func _schedule_ai_turn() -> void:
+	if not _is_game_over:
+		ai_player.take_turn()
+
+
 func _on_turn_changed(_player: PlayerData) -> void:
 	game_net.on_turn_changed()
 	_update_hud()
 	_refresh_reachable_highlights()
+	if GameState.ai_flags[GameState.current_player_index]:
+		_schedule_ai_turn()
 
 
 func _on_resource_info_requested(which: String) -> void:
@@ -697,6 +709,13 @@ func _update_shortage_indicators() -> void:
 					res.append("MAT")
 				if not res.is_empty():
 					cell.set_shortage(true, ", ".join(res) + " Shortage")
+
+
+func _cmd_aivsai(_args: Array) -> void:
+	GameState.ai_flags = [true, true]
+	ConsoleController.print_line("AI vs AI enabled — both players now controlled by AI")
+	if not _is_game_over:
+		ai_player.take_turn()
 
 
 func _cmd_god(_args: Array) -> void:

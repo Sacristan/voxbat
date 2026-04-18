@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://ui/cell_panel.tscn" id="4_cp001"]
 [ext_resource type="PackedScene" path="res://addons/ahhnold_console/console.tscn" id="5_con01"]
 [ext_resource type="Script" path="res://scripts/game_net.gd" id="6_gnet01"]
+[ext_resource type="Script" path="res://scripts/ai_player.gd" id="7_ai01"]
 
 [node name="Main" type="Node3D" unique_id=1958458832]
 script = ExtResource("1_main01")
@@ -30,3 +31,6 @@ shadow_enabled = true
 
 [node name="GameNet" type="Node" parent="."]
 script = ExtResource("6_gnet01")
+
+[node name="AiPlayer" type="Node" parent="."]
+script = ExtResource("7_ai01")
