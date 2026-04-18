@@ -48,6 +48,7 @@ func _ready() -> void:
 	cell_panel.upgrade_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("upgrade", cell))
 	cell_panel.build_residential_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("build_residential", cell))
 	cell_panel.build_industrial_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("build_industrial", cell))
+	cell_panel.mobilize_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("mobilize", cell))
 	cell_panel.panel_closed.connect(_on_panel_closed)
 	ConsoleController.register_command("god", _cmd_god, "Toggle god mode (resources not consumed)")
 	ConsoleController.register_command("aivsai", _cmd_aivsai, "Make both players AI-controlled")
@@ -278,7 +279,7 @@ func _raze_yield_text(cell: Cell) -> String:
 
 func _upgrade_cost(cell: Cell) -> Dictionary:
 	if cell.cell_level >= cell.max_level() or cell.cell_type == Cell.CellType.RESOURCE:
-		return {"mp": 0, "sup": 0}
+		return {"mp": 0, "sup": 0, "mat": 0}
 	var idx := cell.cell_level - 1  # 0 = L1→2, 1 = L2→3
 	if cell.cell_type == Cell.CellType.RESIDENTIAL:
 		var mp_costs: Array = Config.get_value("upgrade.residential_mp_costs")
@@ -315,6 +316,26 @@ func _convert_cost(to_type: Cell.CellType) -> Dictionary:
 func _convert_cost_text(to_type: Cell.CellType) -> String:
 	var cost := _convert_cost(to_type)
 	return "%d SUP / %d MP" % [cost["sup"], cost["mp"]]
+
+
+func _mobilize_cost_text(cell: Cell) -> String:
+	var mat_costs: Array = Config.get_value("mobilize.residential_mat_costs")
+	var mp_yields: Array = Config.get_value("mobilize.residential_mp_yields")
+	var idx: int = cell.cell_level - 1
+	return "%d MAT → +%d MP" % [mat_costs[idx], mp_yields[idx]]
+
+
+func _can_mobilize(cell: Cell) -> bool:
+	if _is_game_over or GameState.has_occupied_this_turn:
+		return false
+	if cell.cell_type != Cell.CellType.RESIDENTIAL:
+		return false
+	if cell.owner_index != GameState.current_player_index:
+		return false
+	if cell.raze_turns_remaining > 0 or cell.mobilize_cooldown > 0 or cell.mobilize_turns_remaining > 0:
+		return false
+	var mat_costs: Array = Config.get_value("mobilize.residential_mat_costs")
+	return GameState.current_player().materials >= mat_costs[cell.cell_level - 1]
 
 
 func _can_convert(cell: Cell, to_type: Cell.CellType) -> bool:
@@ -364,7 +385,7 @@ func _can_upgrade(cell: Cell) -> bool:
 		return false
 	if cell.cell_level >= cell.max_level():
 		return false
-	if cell.upgrade_cooldown > 0 or cell.raze_turns_remaining > 0:
+	if cell.upgrade_cooldown > 0 or cell.raze_turns_remaining > 0 or cell.mobilize_cooldown > 0 or cell.mobilize_turns_remaining > 0:
 		return false
 	var cost := _upgrade_cost(cell)
 	var player := GameState.current_player()
@@ -469,6 +490,17 @@ func _tick_timers(player_idx: int) -> void:
 				cell.upgrade_cooldown -= 1
 				if cell.upgrade_cooldown == 0:
 					cell.set_upgrading(false)
+			if cell.mobilize_turns_remaining > 0 and cell.mobilize_owner_index != player_idx:
+				cell.mobilize_turns_remaining -= 1
+				if cell.mobilize_turns_remaining == 0:
+					cell.set_mobilizing(false)
+					if cell.mobilize_owner_index >= 0:
+						GameState.players[cell.mobilize_owner_index].manpower += cell.mobilize_mp_pending
+					cell.mobilize_mp_pending = 0
+					cell.mobilize_owner_index = -1
+					cell.mobilize_cooldown = Config.get_value("mobilize.cooldown_turns")
+			if cell.mobilize_cooldown > 0 and cell.owner_index == player_idx:
+				cell.mobilize_cooldown -= 1
 			# Contested heat decays one step per full round (tick on player 0's turn)
 			if player_idx == 0 and cell.contested_turns > 0:
 				cell.contested_turns -= 1
@@ -496,13 +528,19 @@ func _on_cell_clicked(cell: Cell) -> void:
 		and cell.raze_turns_remaining == 0
 		and cell.owner_index == GameState.current_player_index
 	)
+	var show_mobilize := (
+		cell.cell_type == Cell.CellType.RESIDENTIAL
+		and cell.raze_turns_remaining == 0
+		and cell.owner_index == GameState.current_player_index
+	)
 	cell_panel.show_for_cell(
 		cell,
 		_can_occupy(cell), _occupation_cost(cell),
 		_can_raze(cell), _raze_cost(cell), _raze_yield_text(cell), show_raze,
 		_can_upgrade(cell), _upgrade_cost_text(cell), show_upgrade,
 		_can_convert(cell, Cell.CellType.RESIDENTIAL), _convert_cost_text(Cell.CellType.RESIDENTIAL), show_build,
-		_can_convert(cell, Cell.CellType.INDUSTRY), _convert_cost_text(Cell.CellType.INDUSTRY)
+		_can_convert(cell, Cell.CellType.INDUSTRY), _convert_cost_text(Cell.CellType.INDUSTRY),
+		_can_mobilize(cell), _mobilize_cost_text(cell), show_mobilize
 	)
 
 
@@ -587,6 +625,23 @@ func _on_build_industrial_pressed(cell: Cell) -> void:
 		player.manpower -= cost["mp"]
 		player.supplies -= cost["sup"]
 	cell.convert_to(Cell.CellType.INDUSTRY)
+	_selected_cell = null
+	GameState.has_occupied_this_turn = true
+	_update_hud()
+
+
+func _on_mobilize_pressed(cell: Cell) -> void:
+	var mat_costs: Array = Config.get_value("mobilize.residential_mat_costs")
+	var mp_yields: Array = Config.get_value("mobilize.residential_mp_yields")
+	var idx: int = cell.cell_level - 1
+	var player := GameState.current_player()
+	if not GameState.god_mode:
+		player.materials -= mat_costs[idx]
+	cell.mobilize_turns_remaining = 1
+	cell.mobilize_mp_pending = mp_yields[idx]
+	cell.mobilize_owner_index = GameState.current_player_index
+	cell.set_mobilizing(true)
+	cell.deselect()
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
 	_update_hud()
@@ -728,7 +783,6 @@ func _update_shortage_indicators() -> void:
 					continue
 				if cell.raze_turns_remaining > 0 or cell.upgrade_cooldown > 0:
 					continue
-				var parts: Array[String] = []
 				var res: Array[String] = []
 				if -_cell_mp(cell) > 0 and player.manpower <= 0:
 					res.append("MP")

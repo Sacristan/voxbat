@@ -15,6 +15,7 @@ const S_UPGRADE_PER_LEVEL          := 30.0
 const S_UPGRADE_RESIDENTIAL_BONUS  := 10.0
 const S_BUILD_RESIDENTIAL          := 22.0
 const S_BUILD_INDUSTRIAL           := 20.0
+const S_MOBILIZE_BASE              := 1.2
 
 const MIN_RAW_RESOURCES            := 2
 
@@ -69,6 +70,7 @@ func _try_action() -> void:
 	_collect_upgrades(candidates, p, needs)
 	_collect_builds(candidates, p, needs)
 	_collect_razes(candidates, p, needs, player)
+	_collect_mobilizes(candidates, needs)
 	if candidates.is_empty():
 		return
 	candidates.shuffle()
@@ -278,6 +280,19 @@ func _collect_razes(candidates: Array, p: Dictionary, needs: Dictionary, player:
 				if cell.owner_index == -1 and _main._can_occupy(cell):
 					continue
 				candidates.append([_enemy_raze_score(cell, p), "raze", cell])
+
+
+func _collect_mobilizes(candidates: Array, needs: Dictionary) -> void:
+	for row in _main.grid:
+		for c in row:
+			var cell: Cell = c as Cell
+			if not _main._can_mobilize(cell):
+				continue
+			var mp_yields: Array = Config.get_value("mobilize.residential_mp_yields")
+			var mp_yield: float = float(mp_yields[cell.cell_level - 1])
+			# Attractive when MP is scarce; discounted when MAT is already scarce
+			var score: float = mp_yield * needs["mp"] * S_MOBILIZE_BASE / maxf(1.0, needs["mat"])
+			candidates.append([score, "mobilize", cell])
 
 
 func _own_raze_score(cell: Cell, needs: Dictionary) -> float:

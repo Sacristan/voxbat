@@ -32,6 +32,7 @@ func handle_action(action: String, cell: Cell) -> void:
 			"upgrade":           _main._on_upgrade_pressed(cell)
 			"build_residential": _main._on_build_residential_pressed(cell)
 			"build_industrial":  _main._on_build_industrial_pressed(cell)
+			"mobilize":          _main._on_mobilize_pressed(cell)
 
 
 func handle_end_turn() -> void:
@@ -70,6 +71,8 @@ func _dispatch(action: String, gx: int, gz: int) -> void:
 			if _main._can_convert(cell, Cell.CellType.RESIDENTIAL): _apply_build_residential.rpc(gx, gz)
 		"build_industrial":
 			if _main._can_convert(cell, Cell.CellType.INDUSTRY): _apply_build_industrial.rpc(gx, gz)
+		"mobilize":
+			if _main._can_mobilize(cell): _apply_mobilize.rpc(gx, gz)
 		"end_turn":
 			_apply_end_turn.rpc()
 
@@ -97,6 +100,11 @@ func _apply_build_residential(gx: int, gz: int) -> void:
 @rpc("authority", "call_local", "reliable")
 func _apply_build_industrial(gx: int, gz: int) -> void:
 	_main._on_build_industrial_pressed(_main.grid[gz][gx])
+
+
+@rpc("authority", "call_local", "reliable")
+func _apply_mobilize(gx: int, gz: int) -> void:
+	_main._on_mobilize_pressed(_main.grid[gz][gx])
 
 
 @rpc("authority", "call_local", "reliable")

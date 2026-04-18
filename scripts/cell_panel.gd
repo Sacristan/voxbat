@@ -5,6 +5,7 @@ signal raze_pressed(cell: Cell)
 signal upgrade_pressed(cell: Cell)
 signal build_residential_pressed(cell: Cell)
 signal build_industrial_pressed(cell: Cell)
+signal mobilize_pressed(cell: Cell)
 signal panel_closed
 
 var _current_cell: Cell = null
@@ -17,6 +18,7 @@ var _current_cell: Cell = null
 @onready var upgrade_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/UpgradeButton
 @onready var build_residential_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/BuildResidentialButton
 @onready var build_industrial_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/BuildIndustrialButton
+@onready var mobilize_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/MobilizeButton
 @onready var close_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/TopRow/CloseButton
 
 
@@ -26,6 +28,7 @@ func _ready() -> void:
 	upgrade_btn.pressed.connect(_on_upgrade_pressed)
 	build_residential_btn.pressed.connect(_on_build_residential_pressed)
 	build_industrial_btn.pressed.connect(_on_build_industrial_pressed)
+	mobilize_btn.pressed.connect(_on_mobilize_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 
 func show_for_cell(
@@ -34,11 +37,12 @@ func show_for_cell(
 		can_raze: bool, raze_cost: int, raze_yield_text: String, show_raze: bool,
 		can_upgrade: bool, upgrade_cost_text: String, show_upgrade: bool,
 		can_build_residential: bool, residential_cost_text: String, show_build: bool,
-		can_build_industrial: bool, industrial_cost_text: String
+		can_build_industrial: bool, industrial_cost_text: String,
+		can_mobilize: bool, mobilize_cost_text: String, show_mobilize: bool
 ) -> void:
 	_current_cell = cell
 	var q: int = cell.grid_x
-	var r: int = cell.grid_z - (cell.grid_x - (cell.grid_x & 1)) / 2
+	var r: int = cell.grid_z - (cell.grid_x - (cell.grid_x & 1)) / 2 as int
 	var s: int = -q - r
 	coords_label.text = "(%d, %d, %d)" % [q, r, s]
 	economy_label.text = cell.economy_text()
@@ -56,6 +60,10 @@ func show_for_cell(
 		title_label.text = "%s, %s (LVL%d)" % [cell.level_name(), ctype, cell.cell_level]
 		if cell.upgrade_cooldown > 0:
 			title_label.text += " ↑%d" % cell.upgrade_cooldown
+		if cell.mobilize_turns_remaining > 0:
+			title_label.text += " ⚑…"
+		elif cell.mobilize_cooldown > 0:
+			title_label.text += " ⚑%d" % cell.mobilize_cooldown
 	occupy_btn.text = "OCCUPY (%d MP)" % occupy_cost if occupy_cost > 0 else "OCCUPY"
 	occupy_btn.disabled = not can_occupy
 	var raze_cost_text := "RAZE (%d MP)" % raze_cost if raze_cost > 0 else "RAZE (free)"
@@ -71,6 +79,9 @@ func show_for_cell(
 	build_industrial_btn.text = "BUILD INDUSTRIAL (%s)" % industrial_cost_text
 	build_industrial_btn.visible = show_build
 	build_industrial_btn.disabled = not can_build_industrial
+	mobilize_btn.text = "MOBILIZE (%s)" % mobilize_cost_text
+	mobilize_btn.visible = show_mobilize
+	mobilize_btn.disabled = not can_mobilize
 	show()
 
 
@@ -100,6 +111,12 @@ func _on_build_residential_pressed() -> void:
 
 func _on_build_industrial_pressed() -> void:
 	build_industrial_pressed.emit(_current_cell)
+	_current_cell = null
+	hide()
+
+
+func _on_mobilize_pressed() -> void:
+	mobilize_pressed.emit(_current_cell)
 	_current_cell = null
 	hide()
 

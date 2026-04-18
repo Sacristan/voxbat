@@ -75,3 +75,9 @@ layout_mode = 2
 size_flags_horizontal = 3
 visible = false
 text = "BUILD INDUSTRIAL"
+
+[node name="MobilizeButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+text = "MOBILIZE"
