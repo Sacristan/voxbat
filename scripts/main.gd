@@ -504,10 +504,11 @@ func _on_cell_clicked(cell: Cell) -> void:
 
 func _on_occupy_pressed(cell: Cell) -> void:
 	var player := GameState.current_player()
-	var is_enemy_residential := (
-		cell.owner_index != -1
-		and cell.owner_index != GameState.current_player_index
-		and cell.cell_type == Cell.CellType.RESIDENTIAL
+	var enemy_idx := cell.owner_index
+	var is_enemy_residential: bool = (
+		enemy_idx != -1
+		and enemy_idx != GameState.current_player_index
+		and _start_positions[enemy_idx] == Vector2i(cell.grid_x, cell.grid_z)
 	)
 	if not GameState.god_mode:
 		player.manpower -= _occupation_cost(cell)
