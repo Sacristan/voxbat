@@ -45,7 +45,7 @@
 	"residential_cell_enemy_cost_multiplier": 2
   },
   "raze": {
-	"self_occupied_mp_cost":                  0,
+	"self_occupied_mp_cost":                  5,
 	"resource_cell_neutral_mp_cost":          10,
 	"resource_cell_enemy_mp_cost":            20,
 	"industry_cell_neutral_mp_per_level":     [10, 20, 35],
