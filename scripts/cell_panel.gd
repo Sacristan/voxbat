@@ -42,7 +42,7 @@ func show_for_cell(
 ) -> void:
 	_current_cell = cell
 	var q: int = cell.grid_x
-	var r: int = cell.grid_z - (cell.grid_x - (cell.grid_x & 1)) / 2 as int
+	var r: int = cell.grid_z - ((cell.grid_x - (cell.grid_x & 1)) >> 1)
 	var s: int = -q - r
 	coords_label.text = "(%d, %d, %d)" % [q, r, s]
 	economy_label.text = cell.economy_text()

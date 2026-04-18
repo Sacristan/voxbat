@@ -332,7 +332,7 @@ func _can_mobilize(cell: Cell) -> bool:
 		return false
 	if cell.owner_index != GameState.current_player_index:
 		return false
-	if cell.raze_turns_remaining > 0 or cell.mobilize_cooldown > 0 or cell.mobilize_turns_remaining > 0:
+	if cell.raze_turns_remaining > 0 or cell.upgrade_cooldown > 0 or cell.mobilize_cooldown > 0 or cell.mobilize_turns_remaining > 0:
 		return false
 	var mat_costs: Array = Config.get_value("mobilize.residential_mat_costs")
 	return GameState.current_player().materials >= mat_costs[cell.cell_level - 1]

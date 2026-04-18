@@ -30,7 +30,7 @@
 	"residential_cell_mat_per_level":    [0, -2, -5, -10],
 	"industry_cell_mp_per_level":        [-2, -3, -5],
 	"industry_cell_sup_per_level":        [-3, -5, -8],
-	"industry_cell_mat_per_level":       [5, 13, 28],
+	"industry_cell_mat_per_level":       [5, 13, 20],
 	"zero_supply_mp_penalty":            -10,
 	"zero_material_mp_penalty":          -10,
 	"starvation_turns_to_lose":           3,

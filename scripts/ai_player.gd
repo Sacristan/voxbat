@@ -15,7 +15,7 @@ const S_UPGRADE_PER_LEVEL          := 30.0
 const S_UPGRADE_RESIDENTIAL_BONUS  := 10.0
 const S_BUILD_RESIDENTIAL          := 22.0
 const S_BUILD_INDUSTRIAL           := 20.0
-const S_MOBILIZE_BASE              := 1.2
+const S_MOBILIZE_BASE              := 0.9
 
 const MIN_RAW_RESOURCES            := 2
 
@@ -30,7 +30,7 @@ const SUSTAIN_PENALTY_RATE := 0.15
 
 const PERSONALITIES: Dictionary = {
 	"expansionist": { "occupy_neutral": 1.2, "occupy_enemy": 1.0, "upgrade": 0.4, "build": 0.6, "industry_bonus": 1.0, "proximity_bonus": 0.0 },
-	"builder":      { "occupy_neutral": 0.5, "occupy_enemy": 0.7, "upgrade": 2.0, "build": 1.8, "industry_bonus": 1.0, "proximity_bonus": 0.0 },
+	"builder":      { "occupy_neutral": 0.8, "occupy_enemy": 0.7, "upgrade": 1.4, "build": 1.8, "industry_bonus": 1.0, "proximity_bonus": 0.0 },
 	"economist":    { "occupy_neutral": 0.9, "occupy_enemy": 0.6, "upgrade": 1.2, "build": 1.5, "industry_bonus": 1.6, "proximity_bonus": 0.0 },
 	"aggressor":    { "occupy_neutral": 0.5, "occupy_enemy": 2.5, "upgrade": 0.3, "build": 0.35, "industry_bonus": 1.0, "proximity_bonus": 1.5 },
 }
@@ -101,10 +101,20 @@ func _resource_needs() -> Dictionary:
 	var player: PlayerData = GameState.current_player()
 	var deltas: Dictionary = _main._calc_resource_deltas(idx)
 	return {
-		"mp":  _need_factor(player.manpower  + deltas["mp"]),
+		"mp":  _need_factor(player.manpower  + deltas["mp"] + _pending_mobilize_mp(idx)),
 		"sup": _need_factor(player.supplies  + deltas["sup"]),
 		"mat": _need_factor(player.materials + deltas["mat"]),
 	}
+
+
+func _pending_mobilize_mp(player_idx: int) -> int:
+	var total: int = 0
+	for row in _main.grid:
+		for c in row:
+			var cell: Cell = c as Cell
+			if cell.mobilize_owner_index == player_idx and cell.mobilize_turns_remaining > 0:
+				total += cell.mobilize_mp_pending
+	return total
 
 
 func _need_factor(projected: int) -> float:
