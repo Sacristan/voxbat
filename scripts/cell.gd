@@ -13,6 +13,7 @@ var cell_level: int = 1
 var raze_turns_remaining: int = 0
 var raze_player_index: int = -1
 var upgrade_cooldown: int = 0
+var contested_turns: int = 0
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 

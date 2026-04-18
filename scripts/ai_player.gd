@@ -8,13 +8,15 @@ const S_OCCUPY_NEUTRAL_RESOURCE    := 15.0
 const S_OCCUPY_NEUTRAL_INDUSTRY    := 20.0
 const S_OCCUPY_NEUTRAL_RESIDENTIAL := 25.0
 const S_OCCUPY_ENEMY_RESOURCE      := 35.0
-const S_OCCUPY_ENEMY_INDUSTRY      := 45.0
-const S_OCCUPY_ENEMY_RESIDENTIAL   := 55.0
+const S_OCCUPY_ENEMY_INDUSTRY      := 60.0
+const S_OCCUPY_ENEMY_RESIDENTIAL   := 70.0
 const S_OCCUPY_ENEMY_BASE          := 200.0
 const S_UPGRADE_PER_LEVEL          := 30.0
 const S_UPGRADE_RESIDENTIAL_BONUS  := 10.0
-const S_BUILD_RESIDENTIAL          := 35.0
-const S_BUILD_INDUSTRIAL           := 20.0
+const S_BUILD_RESIDENTIAL          := 22.0
+const S_BUILD_INDUSTRIAL           := 15.0
+
+const MIN_RAW_RESOURCES            := 2
 
 const NEED_COMFORTABLE := 50
 const NEED_SCARCE      := 20
@@ -29,15 +31,17 @@ const PERSONALITIES: Dictionary = {
 	"expansionist": { "occupy_neutral": 1.2, "occupy_enemy": 1.0, "upgrade": 0.4, "build": 0.6, "industry_bonus": 1.0 },
 	"builder":      { "occupy_neutral": 0.5, "occupy_enemy": 0.7, "upgrade": 2.0, "build": 1.8, "industry_bonus": 1.0 },
 	"economist":    { "occupy_neutral": 0.9, "occupy_enemy": 0.6, "upgrade": 1.2, "build": 1.5, "industry_bonus": 1.6 },
-	"aggressor":    { "occupy_neutral": 0.5, "occupy_enemy": 2.5, "upgrade": 0.2, "build": 0.1, "industry_bonus": 1.0 },
+	"aggressor":    { "occupy_neutral": 0.5, "occupy_enemy": 2.5, "upgrade": 0.3, "build": 0.35, "industry_bonus": 1.0 },
 }
 const PERSONALITY_NAMES: Array = ["expansionist", "builder", "economist", "aggressor"]
 
 var _main
 var _personalities: Array = []
+var _pnames: Array = []
 
 
 func setup(main_node) -> void:
+	randomize()
 	_main = main_node
 	var cfg: Array = Config.get_value("ai.player_personalities")
 	for i in GameState.players.size():
@@ -45,6 +49,7 @@ func setup(main_node) -> void:
 		if pname == "random" or not PERSONALITIES.has(pname):
 			pname = PERSONALITY_NAMES[randi() % PERSONALITY_NAMES.size()]
 		_personalities.append(PERSONALITIES[pname])
+		_pnames.append(pname)
 		print("AI Player %d (%s): %s" % [i, GameState.players[i].player_name, pname])
 
 
@@ -77,6 +82,13 @@ func _try_action() -> void:
 			best_action = entry[1]
 			best_cell = entry[2]
 	if best_cell:
+		var dbg: PlayerData = GameState.current_player()
+		print("AI %s [%s]: %s '%s'L%d@[%d,%d] MP:%d SUP:%d MAT:%d n=%.1f/%.1f/%.1f" % [
+			dbg.player_name, _pnames[GameState.current_player_index].substr(0, 3),
+			best_action, best_cell.level_name(), best_cell.cell_level,
+			best_cell.grid_x, best_cell.grid_z,
+			dbg.manpower, dbg.supplies, dbg.materials,
+			needs["mp"], needs["sup"], needs["mat"]])
 		_main.game_net.handle_action(best_action, best_cell)
 
 
@@ -142,13 +154,14 @@ func _collect_occupy(candidates: Array, p: Dictionary, needs: Dictionary, player
 func _occupy_score(cell: Cell, p: Dictionary, ind_bonus: float, needs: Dictionary) -> float:
 	var is_enemy: bool = cell.owner_index != -1
 	var need: float = _cell_need(cell, needs)
+	var contest_factor: float = 1.0 / (1.0 + cell.contested_turns * 0.4)
 	if is_enemy and _main._start_positions[cell.owner_index] == Vector2i(cell.grid_x, cell.grid_z):
-		return S_OCCUPY_ENEMY_BASE
+		return S_OCCUPY_ENEMY_BASE * contest_factor
 	if is_enemy:
 		match cell.cell_type:
-			Cell.CellType.RESIDENTIAL: return S_OCCUPY_ENEMY_RESIDENTIAL * p["occupy_enemy"] * need
-			Cell.CellType.INDUSTRY:    return S_OCCUPY_ENEMY_INDUSTRY    * p["occupy_enemy"] * ind_bonus * need
-			_:                         return S_OCCUPY_ENEMY_RESOURCE    * p["occupy_enemy"] * ind_bonus * need
+			Cell.CellType.RESIDENTIAL: return S_OCCUPY_ENEMY_RESIDENTIAL * p["occupy_enemy"] * need * contest_factor
+			Cell.CellType.INDUSTRY:    return S_OCCUPY_ENEMY_INDUSTRY    * p["occupy_enemy"] * ind_bonus * need * contest_factor
+			_:                         return S_OCCUPY_ENEMY_RESOURCE    * p["occupy_enemy"] * ind_bonus * need * contest_factor
 	else:
 		match cell.cell_type:
 			Cell.CellType.RESIDENTIAL: return S_OCCUPY_NEUTRAL_RESIDENTIAL * p["occupy_neutral"] * need
@@ -197,11 +210,19 @@ func _upgrade_drain_delta(cell: Cell) -> Dictionary:
 
 func _collect_builds(candidates: Array, p: Dictionary, needs: Dictionary) -> void:
 	var ind_bonus: float = p["industry_bonus"]
+	var idx: int = GameState.current_player_index
+	var raw_count: int = 0
+	for row in _main.grid:
+		for c in row:
+			var cell: Cell = c as Cell
+			if cell.owner_index == idx and cell.cell_type == Cell.CellType.RESOURCE:
+				raw_count += 1
+	if raw_count <= MIN_RAW_RESOURCES:
+		return
 	for row in _main.grid:
 		for c in row:
 			var cell: Cell = c as Cell
 			if _main._can_convert(cell, Cell.CellType.RESIDENTIAL):
-				# Penalise based on NET resource change: we lose the old cell's income
 				var penalty: float = _build_net_sustain(cell, Cell.CellType.RESIDENTIAL, needs)
 				candidates.append([S_BUILD_RESIDENTIAL * p["build"] * needs["mp"] * penalty, "build_residential", cell])
 			if _main._can_convert(cell, Cell.CellType.INDUSTRY):

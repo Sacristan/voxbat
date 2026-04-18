@@ -468,6 +468,9 @@ func _tick_timers(player_idx: int) -> void:
 					cell.set_upgrading(false)
 				else:
 					cell.refresh_upgrading_turns()
+			# Contested heat decays one step per full round (tick on player 0's turn)
+			if player_idx == 0 and cell.contested_turns > 0:
+				cell.contested_turns -= 1
 
 
 # --- Input handlers ---
@@ -512,6 +515,10 @@ func _on_occupy_pressed(cell: Cell) -> void:
 	)
 	if not GameState.god_mode:
 		player.manpower -= _occupation_cost(cell)
+	if cell.owner_index != -1:
+		cell.contested_turns += 1
+	else:
+		cell.contested_turns = 0
 	cell.claim(player)
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true

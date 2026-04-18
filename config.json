@@ -12,14 +12,14 @@
 	  "color": [1.0, 0.15, 0.15],
 	  "manpower": 100,
 	  "supplies": 100,
-	  "materials": 50
+	  "materials": 75
 	},
 	{
 	  "name": "Player B",
 	  "color": [0.15, 0.35, 1.0],
 	  "manpower": 100,
 	  "supplies": 100,
-	  "materials": 50
+	  "materials": 75
 	}
   ],
   "economy": {
