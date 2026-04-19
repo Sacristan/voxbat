@@ -10,7 +10,7 @@ var god_mode: bool = false
 var is_multiplayer: bool = false
 var is_host: bool = false
 var my_peer_id: int = 1
-var ai_flags: Array[bool] = [false, false]
+var ai_flags: Array[bool] = [true, true]
 
 
 func _ready() -> void:

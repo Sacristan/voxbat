@@ -394,18 +394,40 @@ func _can_upgrade(cell: Cell) -> bool:
 
 # --- Economy ---
 
-func _calc_pass1_sup_mat(player_idx: int, connected: Dictionary) -> Dictionary:
-	var sup := 0; var mat := 0
+# Simulates pass-1 (non-residential) with per-type production rules.
+# Resource cells run first so their SUP is available for industry in the same turn.
+# Resource: per-cell gate — runs only if MP sufficient, otherwise no cost and no output.
+# Industry: atomic per-cell gate — runs only if all inputs sufficient, otherwise skip.
+# Returns delta totals {mp,sup,mat} and running sim state {sim_mp,sim_sup,sim_mat} after upkeep.
+func _simulate_pass1(player_idx: int, connected: Dictionary) -> Dictionary:
+	var player := GameState.players[player_idx]
+	var mp := 0; var sup := 0; var mat := 0
+	var sim_mp := player.manpower; var sim_sup := player.supplies; var sim_mat := player.materials
 	for z in GRID_SIZE:
 		for x in GRID_SIZE:
 			var cell: Cell = grid[z][x]
-			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+			if cell.cell_type != Cell.CellType.RESOURCE or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
 				continue
-			if cell.cell_type != Cell.CellType.RESIDENTIAL:
-				sup += _cell_sup(cell)
-				mat += _cell_mat(cell)
-	sup -= Config.get_value("economy.cell_sup_upkeep") * connected.size()
-	return {"sup": sup, "mat": mat}
+			var mp_d := _cell_mp(cell); var sup_d := _cell_sup(cell)
+			if mp_d >= 0 or sim_mp >= -mp_d:
+				var prev_mp := sim_mp
+				sim_mp = max(0, sim_mp + mp_d)
+				mp += sim_mp - prev_mp
+				sup += sup_d
+				sim_sup = max(0, sim_sup + sup_d)
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.cell_type != Cell.CellType.INDUSTRY or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			var mp_d := _cell_mp(cell); var sup_d := _cell_sup(cell); var mat_d := _cell_mat(cell)
+			if (mp_d < 0 and sim_mp < -mp_d) or (sup_d < 0 and sim_sup < -sup_d) or (mat_d < 0 and sim_mat < -mat_d):
+				continue
+			mp += mp_d; sup += sup_d; mat += mat_d
+			sim_mp = max(0, sim_mp + mp_d); sim_sup = max(0, sim_sup + sup_d); sim_mat = max(0, sim_mat + mat_d)
+	var upkeep: int = Config.get_value("economy.cell_sup_upkeep") * connected.size()
+	sup -= upkeep; sim_sup = max(0, sim_sup - upkeep)
+	return {"mp": mp, "sup": sup, "mat": mat, "sim_mp": sim_mp, "sim_sup": sim_sup, "sim_mat": sim_mat}
 
 
 # Checks which residential cells can't be fed given starting avail_sup/avail_mat.
@@ -438,55 +460,13 @@ func _check_starvation(player_idx: int, connected: Dictionary, avail_sup: int, a
 
 func _calc_resource_deltas(player_idx: int) -> Dictionary:
 	var connected := _get_connected_positions(player_idx)
-	var mp := 0; var sup := 0; var mat := 0
-	for z in GRID_SIZE:
-		for x in GRID_SIZE:
-			var cell: Cell = grid[z][x]
-			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
-				continue
-			mp += _cell_mp(cell)
-			sup += _cell_sup(cell)
-			mat += _cell_mat(cell)
-	var upkeep: int = Config.get_value("economy.cell_sup_upkeep") * connected.size()
-	sup -= upkeep
-	var player := GameState.players[player_idx]
-	if player.supplies + sup <= 0:
-		mp += Config.get_value("economy.zero_supply_mp_penalty")
-	if player.materials + mat <= 0:
-		mp += Config.get_value("economy.zero_material_mp_penalty")
-	var pass1 := _calc_pass1_sup_mat(player_idx, connected)
-	var starvation := _check_starvation(player_idx, connected,
-		max(0, player.supplies + pass1["sup"]), max(0, player.materials + pass1["mat"]))
-	return {"mp": mp, "sup": sup, "mat": mat, "sup_starving": starvation["sup_starving"], "mat_starving": starvation["mat_starving"]}
-
-
-# Returns winner name on starvation game-over, empty string otherwise.
-func _apply_turn_effects(player_idx: int) -> String:
-	var player := GameState.players[player_idx]
-	var connected := _get_connected_positions(player_idx)
-	# Pass 1: apply non-residential income so starvation check in pass 2
-	# sees full available resources regardless of grid iteration order.
-	for z in GRID_SIZE:
-		for x in GRID_SIZE:
-			var cell: Cell = grid[z][x]
-			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
-				continue
-			if cell.cell_type == Cell.CellType.RESIDENTIAL:
-				continue
-			var mp_delta := _cell_mp(cell)
-			var sup_delta := _cell_sup(cell)
-			var mat_delta := _cell_mat(cell)
-			if GameState.god_mode:
-				mp_delta = max(0, mp_delta)
-				sup_delta = max(0, sup_delta)
-				mat_delta = max(0, mat_delta)
-			player.manpower = max(0, player.manpower + mp_delta)
-			player.supplies = max(0, player.supplies + sup_delta)
-			player.materials = max(0, player.materials + mat_delta)
-	player.supplies = max(0, player.supplies - Config.get_value("economy.cell_sup_upkeep") * connected.size())
-	# Pass 2: check starvation against post-pass1 resources, then apply residential.
-	var starvation_result := _check_starvation(player_idx, connected, player.supplies, player.materials)
-	var residential_starved: bool = starvation_result["sup_starving"] or starvation_result["mat_starving"]
+	var pass1 := _simulate_pass1(player_idx, connected)
+	var mp: int = pass1["mp"]; var sup: int = pass1["sup"]; var mat: int = pass1["mat"]
+	var sim_mp: int = pass1["sim_mp"]; var sim_sup: int = pass1["sim_sup"]; var sim_mat: int = pass1["sim_mat"]
+	var starvation := _check_starvation(player_idx, connected, sim_sup, sim_mat)
+	var starved_set := {}
+	for s in starvation["starved"]:
+		starved_set[s["pos"]] = true
 	for z in GRID_SIZE:
 		for x in GRID_SIZE:
 			var cell: Cell = grid[z][x]
@@ -494,16 +474,87 @@ func _apply_turn_effects(player_idx: int) -> String:
 				continue
 			if cell.cell_type != Cell.CellType.RESIDENTIAL:
 				continue
+			# Always consume SUP/MAT; only produce MP if not starved
+			var sup_d := _cell_sup(cell); var mat_d := _cell_mat(cell)
+			sup += sup_d; mat += mat_d
+			sim_sup = max(0, sim_sup + sup_d); sim_mat = max(0, sim_mat + mat_d)
+			if not starved_set.has(Vector2i(x, z)):
+				var mp_d := _cell_mp(cell)
+				mp += mp_d
+				sim_mp = max(0, sim_mp + mp_d)
+	if sim_sup == 0:
+		mp += Config.get_value("economy.zero_supply_mp_penalty")
+	if sim_mat == 0:
+		mp += Config.get_value("economy.zero_material_mp_penalty")
+	return {"mp": mp, "sup": sup, "mat": mat, "sup_starving": starvation["sup_starving"], "mat_starving": starvation["mat_starving"]}
+
+
+# Returns winner name on starvation game-over, empty string otherwise.
+func _apply_turn_effects(player_idx: int) -> String:
+	var player := GameState.players[player_idx]
+	var connected := _get_connected_positions(player_idx)
+	# Pass 1a: Resource cells first — their SUP output is available for industry this turn.
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.cell_type != Cell.CellType.RESOURCE or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			var mp_delta := _cell_mp(cell)
+			var sup_delta := _cell_sup(cell)
+			if GameState.god_mode:
+				player.supplies = max(0, player.supplies + max(0, sup_delta))
+			elif mp_delta >= 0 or player.manpower >= -mp_delta:
+				player.manpower = max(0, player.manpower + mp_delta)
+				player.supplies = max(0, player.supplies + sup_delta)
+	# Pass 1b: Industry cells — atomic, skip if any input unaffordable.
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.cell_type != Cell.CellType.INDUSTRY or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
 			var mp_delta := _cell_mp(cell)
 			var sup_delta := _cell_sup(cell)
 			var mat_delta := _cell_mat(cell)
 			if GameState.god_mode:
-				mp_delta = max(0, mp_delta)
-				sup_delta = max(0, sup_delta)
-				mat_delta = max(0, mat_delta)
-			player.manpower = max(0, player.manpower + mp_delta)
-			player.supplies = max(0, player.supplies + sup_delta)
-			player.materials = max(0, player.materials + mat_delta)
+				player.manpower = max(0, player.manpower + max(0, mp_delta))
+				player.supplies = max(0, player.supplies + max(0, sup_delta))
+				player.materials = max(0, player.materials + max(0, mat_delta))
+			else:
+				if (mp_delta < 0 and player.manpower < -mp_delta) or \
+				   (sup_delta < 0 and player.supplies < -sup_delta) or \
+				   (mat_delta < 0 and player.materials < -mat_delta):
+					continue
+				player.manpower = max(0, player.manpower + mp_delta)
+				player.supplies = max(0, player.supplies + sup_delta)
+				player.materials = max(0, player.materials + mat_delta)
+	player.supplies = max(0, player.supplies - Config.get_value("economy.cell_sup_upkeep") * connected.size())
+	# Pass 2: residential cells that can't be fed are skipped (no MP output, counts as starvation).
+	var starvation_result := _check_starvation(player_idx, connected, player.supplies, player.materials)
+	var residential_starved: bool = starvation_result["sup_starving"] or starvation_result["mat_starving"]
+	var starved_set := {}
+	for s in starvation_result["starved"]:
+		starved_set[s["pos"]] = true
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			if cell.cell_type != Cell.CellType.RESIDENTIAL:
+				continue
+			var is_starved := starved_set.has(Vector2i(cell.grid_x, cell.grid_z))
+			var sup_delta := _cell_sup(cell)
+			var mat_delta := _cell_mat(cell)
+			var mp_delta := _cell_mp(cell)
+			if GameState.god_mode:
+				player.manpower = max(0, player.manpower + max(0, mp_delta))
+				player.supplies = max(0, player.supplies + max(0, sup_delta))
+				player.materials = max(0, player.materials + max(0, mat_delta))
+			else:
+				# Always consume SUP/MAT; only produce MP if not starved
+				player.supplies = max(0, player.supplies + sup_delta)
+				player.materials = max(0, player.materials + mat_delta)
+				if not is_starved:
+					player.manpower = max(0, player.manpower + mp_delta)
 	if not GameState.god_mode:
 		if player.supplies == 0:
 			player.manpower = max(0, player.manpower + Config.get_value("economy.zero_supply_mp_penalty"))
@@ -819,9 +870,8 @@ func _update_shortage_indicators() -> void:
 	for player_idx in GameState.players.size():
 		var player := GameState.players[player_idx]
 		var connected := _get_connected_positions(player_idx)
-		var pass1 := _calc_pass1_sup_mat(player_idx, connected)
-		var starvation := _check_starvation(player_idx, connected,
-			max(0, player.supplies + pass1["sup"]), max(0, player.materials + pass1["mat"]))
+		var pass1 := _simulate_pass1(player_idx, connected)
+		var starvation := _check_starvation(player_idx, connected, pass1["sim_sup"], pass1["sim_mat"])
 		for s in starvation["starved"]:
 			var pos: Vector2i = s["pos"]
 			var res: Array[String] = []
