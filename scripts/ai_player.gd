@@ -36,22 +36,42 @@ const PERSONALITIES: Dictionary = {
 }
 const PERSONALITY_NAMES: Array = ["expansionist", "builder", "economist", "aggressor"]
 
+static var _session_index: int = 0  # resets on editor restart
+
 var _main
 var _personalities: Array = []
 var _pnames: Array = []
+
+
+func _build_matchup_schedule() -> Array:
+	var schedule: Array = []
+	for a in PERSONALITY_NAMES:
+		for b in PERSONALITY_NAMES:
+			schedule.append([a, b])
+	return schedule
 
 
 func setup(main_node) -> void:
 	randomize()
 	_main = main_node
 	var cfg: Array = Config.get_value("ai.player_personalities")
+	var use_schedule: bool = cfg.size() >= 2 and cfg[0] == "schedule"
+	var schedule: Array = _build_matchup_schedule() if use_schedule else []
 	for i in GameState.players.size():
-		var pname: String = cfg[i] if i < cfg.size() else "random"
-		if pname == "random" or not PERSONALITIES.has(pname):
-			pname = PERSONALITY_NAMES[randi() % PERSONALITY_NAMES.size()]
+		var pname: String
+		if use_schedule:
+			var pair: Array = schedule[_session_index % schedule.size()]
+			pname = pair[i]
+		else:
+			pname = cfg[i] if i < cfg.size() else "random"
+			if pname == "random" or not PERSONALITIES.has(pname):
+				pname = PERSONALITY_NAMES[randi() % PERSONALITY_NAMES.size()]
 		_personalities.append(PERSONALITIES[pname])
 		_pnames.append(pname)
 		print("AI Player %d (%s): %s" % [i, GameState.players[i].player_name, pname])
+	if use_schedule:
+		print("Session %d / %d: %s vs %s" % [_session_index + 1, schedule.size(), _pnames[0], _pnames[1]])
+		_session_index += 1
 
 
 func take_turn() -> void:
