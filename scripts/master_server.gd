@@ -11,24 +11,10 @@ func _ready() -> void:
 	print("MasterServer: db_url = ", _db_url)
 
 
-func get_public_ip() -> String:
-	var http := HTTPRequest.new()
-	add_child(http)
-	var err := http.request("https://api.ipify.org")
-	print("MasterServer: get_public_ip request err=", err)
-	var result: Array = await http.request_completed
-	http.queue_free()
-	print("MasterServer: get_public_ip result=", result[0], " code=", result[1], " body=", result[3].get_string_from_utf8())
-	if result[0] == OK and result[1] == 200:
-		return result[3].get_string_from_utf8().strip_edges()
-	return ""
-
-
-func register_game(game_name: String, ip: String, port: int) -> String:
+func register_game(game_name: String, session_id: String) -> String:
 	var body := JSON.stringify({
 		"game_name": game_name,
-		"ip": ip,
-		"port": port,
+		"session_id": session_id,
 		"timestamp": Time.get_unix_time_from_system()
 	})
 	var http := HTTPRequest.new()

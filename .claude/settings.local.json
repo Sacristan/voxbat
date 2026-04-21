@@ -18,7 +18,8 @@
       "mcp__godot__get_uid",
       "Bash(ping -n 45 127.0.0.1)",
       "Bash(ping -n 40 127.0.0.1)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "WebFetch(domain:godotengine.org)"
     ]
   }
 }
