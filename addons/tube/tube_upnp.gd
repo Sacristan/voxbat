@@ -197,7 +197,8 @@ func clear_port_mapping() -> void:
 func _notification(what):
 	if what == NOTIFICATION_PREDELETE:
 		for port in mapped_ports:
-			delete_port_mapping(port)
+			if(self):
+				delete_port_mapping(port)
 	
 		mapped_ports.clear()
 		mapped_times.clear()
