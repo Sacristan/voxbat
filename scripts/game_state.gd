@@ -11,7 +11,6 @@ var is_multiplayer: bool = false
 var is_host: bool = false
 var my_peer_id: int = 1
 var ai_flags: Array[bool] = [false, false]
-var tube_client: TubeClient = null
 
 
 func _ready() -> void:
