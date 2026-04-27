@@ -11,12 +11,15 @@ func _ready() -> void:
 	print("MasterServer: db_url = ", _db_url)
 
 
-func register_game(game_name: String, session_id: String) -> String:
-	var body := JSON.stringify({
+func register_game(game_name: String, session_id: String, password_hash: String = "") -> String:
+	var entry: Dictionary = {
 		"game_name": game_name,
 		"session_id": session_id,
 		"timestamp": Time.get_unix_time_from_system()
-	})
+	}
+	if not password_hash.is_empty():
+		entry["password_hash"] = password_hash
+	var body := JSON.stringify(entry)
 	var http := HTTPRequest.new()
 	add_child(http)
 	var err := http.request(_db_url + "/games.json", JSON_HEADERS, HTTPClient.METHOD_POST, body)

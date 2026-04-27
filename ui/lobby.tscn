@@ -46,6 +46,21 @@ layout_mode = 2
 custom_minimum_size = Vector2(80, 0)
 text = "HOST"
 
+[node name="PasswordRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PasswordToggle" type="CheckBox" parent="CenterContainer/VBoxContainer/PasswordRow"]
+layout_mode = 2
+text = "Password protect"
+
+[node name="PasswordField" type="LineEdit" parent="CenterContainer/VBoxContainer/PasswordRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter password"
+secret = true
+visible = false
+
 [node name="HSeparator" type="HSeparator" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -80,3 +95,63 @@ autowrap_mode = 3
 layout_mode = 2
 custom_minimum_size = Vector2(240, 48)
 text = "BACK"
+
+[node name="PasswordPrompt" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="Overlay" type="ColorRect" parent="PasswordPrompt"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.7)
+
+[node name="CenterContainer" type="CenterContainer" parent="PasswordPrompt"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="PasswordPrompt/CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 0)
+
+[node name="VBox" type="VBoxContainer" parent="PasswordPrompt/CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PromptLabel" type="Label" parent="PasswordPrompt/CenterContainer/Panel/VBox"]
+layout_mode = 2
+text = "Password required"
+horizontal_alignment = 1
+
+[node name="PromptField" type="LineEdit" parent="PasswordPrompt/CenterContainer/Panel/VBox"]
+layout_mode = 2
+placeholder_text = "Enter password"
+secret = true
+
+[node name="PromptError" type="Label" parent="PasswordPrompt/CenterContainer/Panel/VBox"]
+layout_mode = 2
+text = "Wrong password"
+horizontal_alignment = 1
+modulate = Color(1, 0.3, 0.3, 1)
+visible = false
+
+[node name="ButtonRow" type="HBoxContainer" parent="PasswordPrompt/CenterContainer/Panel/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="CancelButton" type="Button" parent="PasswordPrompt/CenterContainer/Panel/VBox/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "CANCEL"
+
+[node name="JoinButton" type="Button" parent="PasswordPrompt/CenterContainer/Panel/VBox/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "JOIN"

@@ -17,13 +17,23 @@ const NOUNS := ["Wolf", "Fox", "Bear", "Hawk", "Crow", "Fist", "Blade", "Toad",
 
 @onready var host_name_field: LineEdit = $CenterContainer/VBoxContainer/HostRow/HostNameField
 @onready var host_btn: Button = $CenterContainer/VBoxContainer/HostRow/HostButton
+@onready var password_toggle: CheckBox = $CenterContainer/VBoxContainer/PasswordRow/PasswordToggle
+@onready var password_field: LineEdit = $CenterContainer/VBoxContainer/PasswordRow/PasswordField
 @onready var refresh_btn: Button = $CenterContainer/VBoxContainer/BrowseHeader/RefreshButton
 @onready var game_list_container: VBoxContainer = $CenterContainer/VBoxContainer/GameScrollContainer/GameListContainer
 @onready var status_label: Label = $CenterContainer/VBoxContainer/StatusLabel
 @onready var back_btn: Button = $CenterContainer/VBoxContainer/BackButton
+@onready var password_prompt: Control = $PasswordPrompt
+@onready var prompt_field: LineEdit = $PasswordPrompt/CenterContainer/Panel/VBox/PromptField
+@onready var prompt_error: Label = $PasswordPrompt/CenterContainer/Panel/VBox/PromptError
+@onready var prompt_cancel_btn: Button = $PasswordPrompt/CenterContainer/Panel/VBox/ButtonRow/CancelButton
+@onready var prompt_join_btn: Button = $PasswordPrompt/CenterContainer/Panel/VBox/ButtonRow/JoinButton
 
 var _hosted_game_key: String = ""
 var _firebase_available: bool = false
+var _pending_game_name: String = ""
+var _pending_session_id: String = ""
+var _pending_password_hash: String = ""
 
 
 func _ready() -> void:
@@ -34,6 +44,10 @@ func _ready() -> void:
 	host_btn.pressed.connect(_on_host_pressed)
 	refresh_btn.pressed.connect(_on_refresh_pressed)
 	back_btn.pressed.connect(_on_back_pressed)
+	password_toggle.toggled.connect(_on_password_toggle)
+	prompt_cancel_btn.pressed.connect(_on_prompt_cancel)
+	prompt_join_btn.pressed.connect(_on_prompt_join)
+	prompt_field.text_submitted.connect(func(_t): _on_prompt_join())
 
 	var db_url: String = Config.get_value("firebase.database_url")
 	if db_url.is_empty():
@@ -112,10 +126,20 @@ func _on_session_created() -> void:
 	_set_status("Waiting for opponent... (%s_%s)" % [game_name, session_id])
 
 	if _firebase_available:
-		_hosted_game_key = await MasterServer.register_game(game_name, session_id)
+		var password_hash := ""
+		if password_toggle.button_pressed and not password_field.text.is_empty():
+			password_hash = _hash_password(password_field.text)
+		_hosted_game_key = await MasterServer.register_game(game_name, session_id, password_hash)
 
 
-func _join_game(game_name: String, session_id: String) -> void:
+func _join_game(game_name: String, session_id: String, password_hash: String = "") -> void:
+	if not password_hash.is_empty():
+		_show_password_prompt(game_name, session_id, password_hash)
+		return
+	_do_join(game_name, session_id)
+
+
+func _do_join(game_name: String, session_id: String) -> void:
 	_set_ui_busy(true)
 	_set_status("Joining %s_%s..." % [game_name, session_id])
 
@@ -124,6 +148,41 @@ func _join_game(game_name: String, session_id: String) -> void:
 	tube.session_left.connect(_on_session_left)
 	tube.error_raised.connect(_on_tube_error)
 	tube.join_session(session_id)
+
+
+func _show_password_prompt(game_name: String, session_id: String, password_hash: String) -> void:
+	_pending_game_name = game_name
+	_pending_session_id = session_id
+	_pending_password_hash = password_hash
+	prompt_field.text = ""
+	prompt_error.visible = false
+	password_prompt.visible = true
+	prompt_field.grab_focus()
+
+
+func _on_password_toggle(enabled: bool) -> void:
+	password_field.visible = enabled
+	if not enabled:
+		password_field.text = ""
+
+
+func _on_prompt_cancel() -> void:
+	password_prompt.visible = false
+
+
+func _on_prompt_join() -> void:
+	if _hash_password(prompt_field.text) != _pending_password_hash:
+		prompt_error.visible = true
+		return
+	password_prompt.visible = false
+	_do_join(_pending_game_name, _pending_session_id)
+
+
+func _hash_password(pwd: String) -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(pwd.to_utf8_buffer())
+	return ctx.finish().hex_encode()
 
 
 func _on_session_joined() -> void:
@@ -197,9 +256,10 @@ func _refresh_game_list() -> void:
 			var btn := Button.new()
 			var game_name: String = game.get("game_name", "?")
 			var session_id: String = game.get("session_id", "")
-			btn.text = "%s_%s" % [game_name, session_id]
+			var password_hash: String = game.get("password_hash", "")
+			btn.text = "%s_%s%s" % [game_name, session_id, " [P]" if not password_hash.is_empty() else ""]
 			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			btn.pressed.connect(func(): _join_game(game_name, session_id))
+			btn.pressed.connect(func(): _join_game(game_name, session_id, password_hash))
 			game_list_container.add_child(btn)
 
 	refresh_btn.disabled = false
