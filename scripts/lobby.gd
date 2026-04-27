@@ -106,18 +106,18 @@ func _on_session_created() -> void:
 	GameState.my_peer_id = 1
 
 	var session_id := tube.session_id
-	_set_status("Waiting for opponent... (session: %s)" % session_id)
+	var game_name := host_name_field.text.strip_edges()
+	if game_name.is_empty():
+		game_name = _random_name()
+	_set_status("Waiting for opponent... (%s_%s)" % [game_name, session_id])
 
 	if _firebase_available:
-		var game_name := host_name_field.text.strip_edges()
-		if game_name.is_empty():
-			game_name = _random_name()
 		_hosted_game_key = await MasterServer.register_game(game_name, session_id)
 
 
-func _join_game(session_id: String) -> void:
+func _join_game(game_name: String, session_id: String) -> void:
 	_set_ui_busy(true)
-	_set_status("Joining session %s..." % session_id)
+	_set_status("Joining %s_%s..." % [game_name, session_id])
 
 	var tube := _create_tube_client()
 	tube.session_joined.connect(_on_session_joined)
@@ -195,10 +195,11 @@ func _refresh_game_list() -> void:
 	else:
 		for game in games:
 			var btn := Button.new()
-			btn.text = game.get("game_name", "?")
-			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			var game_name: String = game.get("game_name", "?")
 			var session_id: String = game.get("session_id", "")
-			btn.pressed.connect(func(): _join_game(session_id))
+			btn.text = "%s_%s" % [game_name, session_id]
+			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			btn.pressed.connect(func(): _join_game(game_name, session_id))
 			game_list_container.add_child(btn)
 
 	refresh_btn.disabled = false
