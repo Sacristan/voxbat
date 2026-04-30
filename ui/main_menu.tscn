@@ -153,6 +153,19 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 text = "BACK"
 
+[node name="VersionLabel" type="Label" parent="." unique_id=450394398]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 25.0
+offset_top = -36.0
+offset_right = 211.0
+offset_bottom = -12.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "dev"
+
 [node name="CreditsLabel" type="Label" parent="." unique_id=909881048]
 layout_mode = 1
 anchors_preset = 3
@@ -162,9 +175,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -190.0
 offset_top = -36.0
-offset_right = -4.0
+offset_right = -25.0
 offset_bottom = -12.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 12
 text = "Made w Godot by Kesteris"
+horizontal_alignment = 2

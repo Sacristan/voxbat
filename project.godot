@@ -25,7 +25,7 @@ ConsoleController="*res://addons/ahhnold_console/console_controller.gd"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ahhnold_console/plugin.cfg", "res://addons/tube/plugin.cfg")
+enabled=PackedStringArray("res://addons/ahhnold_console/plugin.cfg", "res://addons/tube/plugin.cfg", "res://addons/version_injector/plugin.cfg")
 
 [physics]
 
