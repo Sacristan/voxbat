@@ -28,3 +28,5 @@ android.release.arm64 = "lib/libwebrtc_native.android.template_release.arm64.so"
 android.release.x86_64 = "lib/libwebrtc_native.android.template_release.x86_64.so"
 ios.release.arm64 = "lib/libwebrtc_native.ios.template_release.arm64.dylib"
 ios.release.x86_64 = "lib/libwebrtc_native.ios.template_release.x86_64.simulator.dylib"
+
+web.wasm32 = ""
