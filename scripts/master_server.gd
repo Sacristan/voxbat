@@ -8,7 +8,7 @@ var _db_url: String = ""
 
 func _ready() -> void:
 	_db_url = Config.get_value("firebase.database_url").rstrip("/")
-	print("MasterServer: db_url = ", _db_url)
+	if OS.is_debug_build(): print("MasterServer: db_url = ", _db_url)
 
 
 func register_game(game_name: String, session_id: String, password_hash: String = "") -> String:
@@ -23,10 +23,10 @@ func register_game(game_name: String, session_id: String, password_hash: String 
 	var http := HTTPRequest.new()
 	add_child(http)
 	var err := http.request(_db_url + "/games.json", JSON_HEADERS, HTTPClient.METHOD_POST, body)
-	print("MasterServer: register_game request err=", err, " body=", body)
+	if OS.is_debug_build(): print("MasterServer: register_game request err=", err, " body=", body)
 	var result: Array = await http.request_completed
 	http.queue_free()
-	print("MasterServer: register_game result=", result[0], " code=", result[1], " body=", result[3].get_string_from_utf8())
+	if OS.is_debug_build(): print("MasterServer: register_game result=", result[0], " code=", result[1], " body=", result[3].get_string_from_utf8())
 	if result[0] == OK and result[1] == 200:
 		var data = JSON.parse_string(result[3].get_string_from_utf8())
 		if data is Dictionary:
@@ -40,10 +40,10 @@ func unregister_game(key: String) -> void:
 	var http := HTTPRequest.new()
 	add_child(http)
 	var err := http.request(_db_url + "/games/" + key + ".json", [], HTTPClient.METHOD_DELETE)
-	print("MasterServer: unregister_game key=", key, " err=", err)
+	if OS.is_debug_build(): print("MasterServer: unregister_game key=", key, " err=", err)
 	var result: Array = await http.request_completed
 	http.queue_free()
-	print("MasterServer: unregister_game result=", result[0], " code=", result[1])
+	if OS.is_debug_build(): print("MasterServer: unregister_game result=", result[0], " code=", result[1])
 
 
 ## Returns {"games": Array, "etag": String} on success/change,

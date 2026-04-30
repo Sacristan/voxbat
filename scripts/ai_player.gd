@@ -68,9 +68,9 @@ func setup(main_node) -> void:
 				pname = PERSONALITY_NAMES[randi() % PERSONALITY_NAMES.size()]
 		_personalities.append(PERSONALITIES[pname])
 		_pnames.append(pname)
-		if GameState.ai_flags[i]:
+		if GameState.ai_flags[i] and OS.is_debug_build():
 			print("AI Player %d (%s): %s" % [i, GameState.players[i].player_name, pname])
-	if use_schedule:
+	if use_schedule and OS.is_debug_build():
 		print("Session %d / %d: %s vs %s" % [_session_index + 1, schedule.size(), _pnames[0], _pnames[1]])
 		_session_index += 1
 
@@ -105,13 +105,14 @@ func _try_action() -> void:
 			best_action = entry[1]
 			best_cell = entry[2]
 	if best_cell:
-		var dbg: PlayerData = GameState.current_player()
-		print("AI %s [%s]: %s '%s'L%d@[%d,%d] MP:%d SUP:%d MAT:%d n=%.1f/%.1f/%.1f" % [
-			dbg.player_name, _pnames[GameState.current_player_index].substr(0, 3),
-			best_action, best_cell.level_name(), best_cell.cell_level,
-			best_cell.grid_x, best_cell.grid_z,
-			dbg.manpower, dbg.supplies, dbg.materials,
-			needs["mp"], needs["sup"], needs["mat"]])
+		if OS.is_debug_build():
+			var dbg: PlayerData = GameState.current_player()
+			print("AI %s [%s]: %s '%s'L%d@[%d,%d] MP:%d SUP:%d MAT:%d n=%.1f/%.1f/%.1f" % [
+				dbg.player_name, _pnames[GameState.current_player_index].substr(0, 3),
+				best_action, best_cell.level_name(), best_cell.cell_level,
+				best_cell.grid_x, best_cell.grid_z,
+				dbg.manpower, dbg.supplies, dbg.materials,
+				needs["mp"], needs["sup"], needs["mat"]])
 		_main.game_net.handle_action(best_action, best_cell)
 
 
