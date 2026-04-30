@@ -39,7 +39,8 @@ func handle_end_turn() -> void:
 	if GameState.is_multiplayer:
 		if GameState.current_player_index != GameState.my_player_index():
 			return
-		request("end_turn", -1, -1)
+		_main._do_end_turn()
+		_sync_end_turn.rpc()
 	else:
 		_main._do_end_turn()
 
@@ -55,7 +56,7 @@ func request(action: String, gx: int, gz: int) -> void:
 func _send_to_host(action: String, gx: int, gz: int) -> void:
 	if not GameState.is_host:
 		return
-	_dispatch(action, gx, gz)
+	_dispatch.call_deferred(action, gx, gz)
 
 
 func _dispatch(action: String, gx: int, gz: int) -> void:
@@ -73,10 +74,6 @@ func _dispatch(action: String, gx: int, gz: int) -> void:
 			if _main._can_convert(cell, Cell.CellType.INDUSTRY): _apply_build_industrial.rpc(gx, gz)
 		"mobilize":
 			if _main._can_mobilize(cell): _apply_mobilize.rpc(gx, gz)
-		"end_turn":
-			_apply_end_turn.rpc()
-
-
 @rpc("authority", "call_local", "reliable")
 func _apply_occupy(gx: int, gz: int) -> void:
 	_main._on_occupy_pressed(_main.grid[gz][gx])
@@ -107,8 +104,8 @@ func _apply_mobilize(gx: int, gz: int) -> void:
 	_main._on_mobilize_pressed(_main.grid[gz][gx])
 
 
-@rpc("authority", "call_local", "reliable")
-func _apply_end_turn() -> void:
+@rpc("any_peer", "reliable")
+func _sync_end_turn() -> void:
 	_main._do_end_turn()
 
 

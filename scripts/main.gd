@@ -54,6 +54,7 @@ func _ready() -> void:
 	ConsoleController.register_command("aivsai", _cmd_aivsai, "Make both players AI-controlled")
 	ai_player.setup(self)
 	_update_hud()
+	game_net.on_turn_changed()
 	_refresh_reachable_highlights()
 	if GameState.ai_flags[GameState.current_player_index]:
 		_schedule_ai_turn()
