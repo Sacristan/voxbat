@@ -913,6 +913,6 @@ func _cmd_god(_args: Array) -> void:
 
 func _update_hud() -> void:
 	var deltas := _calc_resource_deltas(GameState.current_player_index)
-	hud.update_turn(GameState.current_player().player_name)
+	hud.update_turn(GameState.current_player().player_name, GameState.turn_number)
 	hud.update_resources(GameState.current_player(), deltas["mp"], deltas["sup"], deltas["mat"], deltas["sup_starving"], deltas["mat_starving"])
 	_update_shortage_indicators()

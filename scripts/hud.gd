@@ -29,8 +29,8 @@ func _ready() -> void:
 	mat_section.gui_input.connect(_on_mat_input)
 
 
-func update_turn(player_name: String) -> void:
-	turn_label.text = "Turn: " + player_name
+func update_turn(player_name: String, turn_number: int) -> void:
+	turn_label.text = "Turn %d: %s" % [turn_number, player_name]
 
 
 func update_resources(player: PlayerData, mp_delta: int, sup_delta: int, mat_delta: int, sup_starving: bool, mat_starving: bool) -> void:

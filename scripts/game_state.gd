@@ -4,6 +4,7 @@ signal turn_changed(player: PlayerData)
 
 var players: Array[PlayerData] = []
 var current_player_index: int = 0
+var turn_number: int = 1
 var has_occupied_this_turn: bool = false
 var god_mode: bool = false
 
@@ -35,6 +36,7 @@ func my_player_index() -> int:
 
 func reset() -> void:
 	current_player_index = 0
+	turn_number = 1
 	has_occupied_this_turn = false
 	var pcfg: Array = Config.get_value("players")
 	for i in players.size():
@@ -56,4 +58,6 @@ func opponent() -> PlayerData:
 func end_turn() -> void:
 	has_occupied_this_turn = false
 	current_player_index = (current_player_index + 1) % players.size()
+	if current_player_index == 0:
+		turn_number += 1
 	turn_changed.emit(current_player())
