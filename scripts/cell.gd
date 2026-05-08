@@ -13,6 +13,11 @@ var cell_level: int = 1
 var raze_turns_remaining: int = 0
 var raze_player_index: int = -1
 var upgrade_cooldown: int = 0
+var mobilize_cooldown: int = 0
+var mobilize_turns_remaining: int = 0
+var mobilize_mp_pending: int = 0
+var mobilize_owner_index: int = -1
+var contested_turns: int = 0
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 
@@ -43,7 +48,9 @@ var _shortage_tween: Tween
 var _is_shortage: bool = false
 
 var _upgrading_label: Label3D
+var _upgrading_turns_label: Label3D
 var _upgrading_cube_tween: Tween
+var _mobilizing_label: Label3D
 
 static var _slice_meshes: Array = []
 static var _reachable_outline_mat: StandardMaterial3D = null
@@ -76,6 +83,7 @@ func _ready() -> void:
 	_update_level_visual()
 	_create_shortage_indicator()
 	_create_upgrading_indicator()
+	_create_mobilizing_indicator()
 
 
 func _create_level_cubes() -> void:
@@ -187,9 +195,25 @@ func _create_upgrading_indicator() -> void:
 	_upgrading_label.visible = false
 	add_child(_upgrading_label)
 
+	_upgrading_turns_label = Label3D.new()
+	_upgrading_turns_label.font_size = 24
+	_upgrading_turns_label.modulate = Color(0.0, 1.0, 1.0)
+	_upgrading_turns_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_upgrading_turns_label.no_depth_test = true
+	_upgrading_turns_label.position = Vector3(0.0, 1.3, 0.0)
+	_upgrading_turns_label.visible = false
+	add_child(_upgrading_turns_label)
+
+
+func refresh_upgrading_turns() -> void:
+	var total: int = Config.get_value("economy.upgrade_cooldown_turns")
+	_upgrading_turns_label.text = "%d/%d" % [upgrade_cooldown, total]
 
 func set_upgrading(active: bool) -> void:
 	_upgrading_label.visible = active
+	_upgrading_turns_label.visible = active
+	if active:
+		refresh_upgrading_turns()
 	if _upgrading_cube_tween != null:
 		_upgrading_cube_tween.kill()
 		_upgrading_cube_tween = null
@@ -205,6 +229,22 @@ func set_upgrading(active: bool) -> void:
 			var top_cube: MeshInstance3D = _level_cubes[cell_level - 1]
 			var c: Color = top_cube.material_override.albedo_color
 			top_cube.material_override.albedo_color = Color(c.r, c.g, c.b, 0.5)
+
+
+func _create_mobilizing_indicator() -> void:
+	_mobilizing_label = Label3D.new()
+	_mobilizing_label.text = "Mobilizing"
+	_mobilizing_label.font_size = 28
+	_mobilizing_label.modulate = Color(1.0, 0.5, 0.0)
+	_mobilizing_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_mobilizing_label.no_depth_test = true
+	_mobilizing_label.position = Vector3(0.0, 1.9, 0.0)
+	_mobilizing_label.visible = false
+	add_child(_mobilizing_label)
+
+
+func set_mobilizing(active: bool) -> void:
+	_mobilizing_label.visible = active
 
 
 func _input_event(_camera: Camera3D, event: InputEvent,
@@ -285,6 +325,12 @@ func convert_to(new_type: CellType) -> void:
 
 func raze() -> void:
 	upgrade_cooldown = 0
+	mobilize_cooldown = 0
+	mobilize_turns_remaining = 0
+	mobilize_mp_pending = 0
+	mobilize_owner_index = -1
+	set_upgrading(false)
+	set_mobilizing(false)
 	owner_index = -1
 	if cell_type != CellType.RESOURCE:
 		if cell_level > 1:

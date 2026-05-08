@@ -4,8 +4,15 @@ signal turn_changed(player: PlayerData)
 
 var players: Array[PlayerData] = []
 var current_player_index: int = 0
+var turn_number: int = 1
 var has_occupied_this_turn: bool = false
 var god_mode: bool = false
+
+var is_multiplayer: bool = false
+var is_host: bool = false
+var my_peer_id: int = 1
+var ai_flags: Array[bool] = [false, false]
+var tube_client: TubeClient = null
 
 
 func _ready() -> void:
@@ -21,6 +28,25 @@ func _ready() -> void:
 		players.append(p)
 
 
+func my_player_index() -> int:
+	if not is_multiplayer:
+		return current_player_index
+	return 0 if is_host else 1
+
+
+func reset() -> void:
+	current_player_index = 0
+	turn_number = 1
+	has_occupied_this_turn = false
+	var pcfg: Array = Config.get_value("players")
+	for i in players.size():
+		var pd: Dictionary = pcfg[i]
+		players[i].manpower = pd.get("manpower", 100)
+		players[i].supplies = pd.get("supplies", 100)
+		players[i].materials = pd.get("materials", 100)
+		players[i].starvation_turns = 0
+
+
 func current_player() -> PlayerData:
 	return players[current_player_index]
 
@@ -32,4 +58,6 @@ func opponent() -> PlayerData:
 func end_turn() -> void:
 	has_occupied_this_turn = false
 	current_player_index = (current_player_index + 1) % players.size()
+	if current_player_index == 0:
+		turn_number += 1
 	turn_changed.emit(current_player())

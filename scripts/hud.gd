@@ -29,20 +29,24 @@ func _ready() -> void:
 	mat_section.gui_input.connect(_on_mat_input)
 
 
-func update_turn(player_name: String) -> void:
-	turn_label.text = "Turn: " + player_name
+func update_turn(player_name: String, turn_number: int) -> void:
+	turn_label.text = "Turn %d: %s" % [turn_number, player_name]
 
 
-func update_resources(player: PlayerData, mp_delta: int, sup_delta: int, mat_delta: int) -> void:
+func update_resources(player: PlayerData, mp_delta: int, sup_delta: int, mat_delta: int, sup_starving: bool, mat_starving: bool) -> void:
 	manpower_label.text = "MP: %d" % player.manpower
 	_set_delta(manpower_delta_label, mp_delta)
-	_set_shortage_label(manpower_label, player.manpower, mp_delta)
+	_set_shortage_label(manpower_label, player.manpower <= 0 and mp_delta < 0)
 	supplies_label.text = "SUP: %d" % player.supplies
 	_set_delta(supplies_delta_label, sup_delta)
-	_set_shortage_label(supplies_label, player.supplies, sup_delta)
+	_set_shortage_label(supplies_label, sup_starving)
 	materials_label.text = "MAT: %d" % player.materials
 	_set_delta(materials_delta_label, mat_delta)
-	_set_shortage_label(materials_label, player.materials, mat_delta)
+	_set_shortage_label(materials_label, mat_starving)
+
+
+func set_end_turn_interactable(enabled: bool) -> void:
+	end_turn_btn.disabled = not enabled
 
 
 func show_game_over(winner_name: String) -> void:
@@ -61,11 +65,8 @@ func close_all_panels() -> void:
 	resource_info_panel.visible = false
 
 
-func _set_shortage_label(label: Label, value: int, delta: int) -> void:
-	if value <= 0 and delta < 0:
-		label.modulate = Color(1.0, 0.15, 0.15)
-	else:
-		label.modulate = Color(1.0, 1.0, 1.0)
+func _set_shortage_label(label: Label, shortage: bool) -> void:
+	label.modulate = Color(1.0, 0.15, 0.15) if shortage else Color(1.0, 1.0, 1.0)
 
 
 func _set_delta(label: Label, delta: int) -> void:

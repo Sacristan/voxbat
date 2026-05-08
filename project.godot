@@ -10,20 +10,22 @@ config_version=5
 
 [application]
 
-config/name="Voxbat"
-run/main_scene="res://main.tscn"
+config/name="Hexfront"
+run/main_scene="res://ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
+boot_splash/show_image=false
 config/icon="res://icon.svg"
 
 [autoload]
 
 Config="*res://scripts/config.gd"
 GameState="*res://scripts/game_state.gd"
+MasterServer="*res://scripts/master_server.gd"
 ConsoleController="*res://addons/ahhnold_console/console_controller.gd"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ahhnold_console/plugin.cfg")
+enabled=PackedStringArray("res://addons/ahhnold_console/plugin.cfg", "res://addons/tube/plugin.cfg", "res://addons/version_injector/plugin.cfg")
 
 [physics]
 

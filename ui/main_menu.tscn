@@ -1,0 +1,184 @@
+[gd_scene format=3 uid="uid://bv1p7d0amymoc"]
+
+[ext_resource type="Script" uid="uid://h514d7dv5fj3" path="res://scripts/main_menu.gd" id="1_mainmenu"]
+
+[node name="MainMenu" type="Control" unique_id=1482006684]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mainmenu")
+
+[node name="Background" type="ColorRect" parent="." unique_id=446358171]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.1, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=170749032]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=2080449988]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=588809775]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "HEXFRONT"
+horizontal_alignment = 1
+
+[node name="LocalVersusButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=837572935]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+text = "VERSUS LOCAL"
+
+[node name="VsAIButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=173437937]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+text = "VERSUS AI"
+
+[node name="MultiplayerVersusButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=2134305440]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+text = "VERSUS MULTIPLAYER"
+
+[node name="AIvsAIButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=53758038]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+text = "AI VS AI"
+
+[node name="HowToPlayButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1281136086]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+text = "HOW TO PLAY"
+
+[node name="HowToPlayPanel" type="Control" parent="." unique_id=1796862011]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Backdrop" type="ColorRect" parent="HowToPlayPanel" unique_id=948948435]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.85)
+
+[node name="CenterContainer" type="CenterContainer" parent="HowToPlayPanel" unique_id=725040367]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HowToPlayPanel/CenterContainer" unique_id=1718663861]
+custom_minimum_size = Vector2(640, 520)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HowToPlayPanel/CenterContainer/PanelContainer" unique_id=431232298]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="HowToPlayPanel/CenterContainer/PanelContainer/MarginContainer" unique_id=1672746059]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="HowToPlayPanel/CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=1870559861]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "HOW TO PLAY"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HowToPlayPanel/CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=1644710912]
+custom_minimum_size = Vector2(0, 380)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RulesLabel" type="RichTextLabel" parent="HowToPlayPanel/CenterContainer/PanelContainer/MarginContainer/VBox/ScrollContainer" unique_id=1495829800]
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+text = "[b]GOAL[/b]
+Defeat your opponent by either:
+  • Occupying [b]all[/b] of their [b]Residential[/b] cells
+  • Starving them out — if they cannot afford their residential upkeep for several consecutive turns, they lose
+
+[b]RESOURCES[/b]
+Each turn, connected cells generate income:
+  • [b]Manpower (MP)[/b] — spent on most actions
+  • [b]Supplies (SUP)[/b] — consumed by residential cells each turn
+  • [b]Materials (MAT)[/b] — consumed by residential cells each turn
+
+Only cells [b]connected[/b] to your starting base produce income. An isolated cell generates nothing.
+
+[b]CELL TYPES[/b]
+  • [b]Residential[/b] — generates MP. Consumes SUP and MAT each turn.
+  • [b]Resource[/b] — generates SUP. Consumes MP.
+  • [b]Industry[/b] — generates MAT. Consumes SUP and MP.
+
+[b]ACTIONS[/b] (all cost Manpower)
+  • [b]Occupy[/b] — claim an adjacent unowned cell, or take an enemy cell (costs more MP)
+  • [b]Upgrade[/b] — improve a cell to the next level, increasing its output (takes several turns)
+  • [b]Raze[/b] — raze a cell; it downgrades it's level and it becomes neutral after a cooldown period
+  • [b]Build Residential / Industrial[/b] — convert a cell to a different type
+  • [b]Mobilize[/b] — generate extra manpower by distributing extra resources, locks upgrading for few turns
+
+[b]TURNS[/b]
+Players alternate turns. End your turn with the [b]End Turn[/b] button when you are done acting."
+fit_content = true
+
+[node name="CloseButton" type="Button" parent="HowToPlayPanel/CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=2011102492]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "BACK"
+
+[node name="VersionLabel" type="Label" parent="." unique_id=450394398]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 25.0
+offset_top = -36.0
+offset_right = 211.0
+offset_bottom = -12.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "dev"
+
+[node name="CreditsLabel" type="Label" parent="." unique_id=909881048]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -36.0
+offset_right = -25.0
+offset_bottom = -12.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "Made w Godot by Kesteris"
+horizontal_alignment = 2

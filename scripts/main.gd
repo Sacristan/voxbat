@@ -21,6 +21,8 @@ const SHOW_REACHABLE_HIGHLIGHTS := false
 @onready var camera_rig = $CameraRig
 @onready var hud = $HUD
 @onready var cell_panel = $CellPanel
+@onready var game_net = $GameNet
+@onready var ai_player = $AiPlayer
 
 
 func _ready() -> void:
@@ -32,23 +34,30 @@ func _ready() -> void:
 	for p in Config.get_value("grid.village_positions"):
 		_village_positions.append(Vector2i(p[0], p[1]))
 
+	GameState.reset()
 	get_viewport().physics_object_picking = true
 	_spawn_grid()
 	_place_starting_cells()
-	camera_rig.focus_for_player(GameState.current_player_index, true)
+	camera_rig.focus_for_player(GameState.my_player_index(), true)
 	camera_rig.fit_to_grid(GRID_SIZE)
 	GameState.turn_changed.connect(_on_turn_changed)
-	hud.end_turn_pressed.connect(_on_end_turn)
+	hud.end_turn_pressed.connect(game_net.handle_end_turn)
 	hud.resource_info_requested.connect(_on_resource_info_requested)
-	cell_panel.occupy_pressed.connect(_on_occupy_pressed)
-	cell_panel.raze_pressed.connect(_on_raze_pressed)
-	cell_panel.upgrade_pressed.connect(_on_upgrade_pressed)
-	cell_panel.build_residential_pressed.connect(_on_build_residential_pressed)
-	cell_panel.build_industrial_pressed.connect(_on_build_industrial_pressed)
+	cell_panel.occupy_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("occupy", cell))
+	cell_panel.raze_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("raze", cell))
+	cell_panel.upgrade_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("upgrade", cell))
+	cell_panel.build_residential_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("build_residential", cell))
+	cell_panel.build_industrial_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("build_industrial", cell))
+	cell_panel.mobilize_pressed.connect(func(cell: Cell) -> void: game_net.handle_action("mobilize", cell))
 	cell_panel.panel_closed.connect(_on_panel_closed)
 	ConsoleController.register_command("god", _cmd_god, "Toggle god mode (resources not consumed)")
+	ConsoleController.register_command("aivsai", _cmd_aivsai, "Make both players AI-controlled")
+	ai_player.setup(self)
 	_update_hud()
+	game_net.on_turn_changed()
 	_refresh_reachable_highlights()
+	if GameState.ai_flags[GameState.current_player_index]:
+		_schedule_ai_turn()
 
 
 func _spawn_grid() -> void:
@@ -228,10 +237,14 @@ func _occupation_cost(cell: Cell) -> int:
 			return Config.get_value("occupation.resource_cell_neutral_cost")
 
 
+func _raze_effective_level(cell: Cell) -> int:
+	return cell.cell_level - 1 if cell.upgrade_cooldown > 0 and cell.cell_level > 1 else cell.cell_level
+
 func _raze_cost(cell: Cell) -> int:
 	if cell.owner_index == GameState.current_player_index:
 		return Config.get_value("raze.self_occupied_mp_cost")
 	var is_enemy := cell.owner_index != -1
+	var level := _raze_effective_level(cell)
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
 			if is_enemy:
@@ -240,48 +253,52 @@ func _raze_cost(cell: Cell) -> int:
 		Cell.CellType.INDUSTRY:
 			var key := "raze.industry_cell_enemy_mp_per_level" if is_enemy else "raze.industry_cell_neutral_mp_per_level"
 			var costs: Array = Config.get_value(key)
-			return costs[cell.cell_level - 1]
+			return costs[level - 1]
 		_:  # RESIDENTIAL
 			var key := "raze.residential_cell_enemy_mp_per_level" if is_enemy else "raze.residential_cell_neutral_mp_per_level"
 			var costs: Array = Config.get_value(key)
-			return costs[cell.cell_level - 1]
+			return costs[level - 1]
 
 
 func _raze_yield_text(cell: Cell) -> String:
 	var yield_turns: int = Config.get_value("raze.resource_yield_turns")
+	var level := _raze_effective_level(cell)
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
 			var sup: int = int(Config.get_value("economy.resource_cell_sup")) * yield_turns
 			return "+%d SUP" % sup
 		Cell.CellType.INDUSTRY:
 			var mat_vals: Array = Config.get_value("economy.industry_cell_mat_per_level")
-			var mat: int = int(mat_vals[cell.cell_level - 1]) * yield_turns
+			var mat: int = int(mat_vals[level - 1]) * yield_turns
 			return "+%d MAT" % mat
 		_:  # RESIDENTIAL
 			var mp_vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
 			var pct: int = 100 if cell.owner_index == GameState.current_player_index else Config.get_value("raze.residential_mp_refund_percent")
-			var mp: int = int(mp_vals[cell.cell_level - 1] * pct / 100.0)
+			var mp: int = int(mp_vals[level - 1] * pct / 100.0)
 			return "+%d MP" % mp
 
 
 func _upgrade_cost(cell: Cell) -> Dictionary:
 	if cell.cell_level >= cell.max_level() or cell.cell_type == Cell.CellType.RESOURCE:
-		return {"mp": 0, "sup": 0}
+		return {"mp": 0, "sup": 0, "mat": 0}
 	var idx := cell.cell_level - 1  # 0 = L1→2, 1 = L2→3
 	if cell.cell_type == Cell.CellType.RESIDENTIAL:
 		var mp_costs: Array = Config.get_value("upgrade.residential_mp_costs")
-		return {"mp": mp_costs[idx], "sup": 0}
+		var mat_costs: Array = Config.get_value("upgrade.residential_mat_costs")
+		return {"mp": mp_costs[idx], "sup": 0, "mat": mat_costs[idx]}
 	elif cell.cell_type == Cell.CellType.INDUSTRY:
 		var sup_costs: Array = Config.get_value("upgrade.industry_sup_costs")
 		var mp_costs: Array = Config.get_value("upgrade.industry_mp_costs")
-		return {"mp": mp_costs[idx], "sup": sup_costs[idx]}
-	return {"mp": 0, "sup": 0}
+		return {"mp": mp_costs[idx], "sup": sup_costs[idx], "mat": 0}
+	return {"mp": 0, "sup": 0, "mat": 0}
 
 
 func _upgrade_cost_text(cell: Cell) -> String:
 	var cost := _upgrade_cost(cell)
 	if cost["sup"] > 0:
 		return "%d SUP / %d MP" % [cost["sup"], cost["mp"]]
+	if cost["mat"] > 0:
+		return "%d MAT / %d MP" % [cost["mat"], cost["mp"]]
 	return "%d MP" % cost["mp"]
 
 
@@ -300,6 +317,26 @@ func _convert_cost(to_type: Cell.CellType) -> Dictionary:
 func _convert_cost_text(to_type: Cell.CellType) -> String:
 	var cost := _convert_cost(to_type)
 	return "%d SUP / %d MP" % [cost["sup"], cost["mp"]]
+
+
+func _mobilize_cost_text(cell: Cell) -> String:
+	var mat_costs: Array = Config.get_value("mobilize.residential_mat_costs")
+	var mp_yields: Array = Config.get_value("mobilize.residential_mp_yields")
+	var idx: int = cell.cell_level - 1
+	return "%d MAT → +%d MP" % [mat_costs[idx], mp_yields[idx]]
+
+
+func _can_mobilize(cell: Cell) -> bool:
+	if _is_game_over or GameState.has_occupied_this_turn:
+		return false
+	if cell.cell_type != Cell.CellType.RESIDENTIAL:
+		return false
+	if cell.owner_index != GameState.current_player_index:
+		return false
+	if cell.raze_turns_remaining > 0 or cell.upgrade_cooldown > 0 or cell.mobilize_cooldown > 0 or cell.mobilize_turns_remaining > 0:
+		return false
+	var mat_costs: Array = Config.get_value("mobilize.residential_mat_costs")
+	return GameState.current_player().materials >= mat_costs[cell.cell_level - 1]
 
 
 func _can_convert(cell: Cell, to_type: Cell.CellType) -> bool:
@@ -349,60 +386,176 @@ func _can_upgrade(cell: Cell) -> bool:
 		return false
 	if cell.cell_level >= cell.max_level():
 		return false
-	if cell.upgrade_cooldown > 0 or cell.raze_turns_remaining > 0:
+	if cell.upgrade_cooldown > 0 or cell.raze_turns_remaining > 0 or cell.mobilize_cooldown > 0 or cell.mobilize_turns_remaining > 0:
 		return false
 	var cost := _upgrade_cost(cell)
 	var player := GameState.current_player()
-	return player.manpower >= cost["mp"] and player.supplies >= cost["sup"]
+	return player.manpower >= cost["mp"] and player.supplies >= cost["sup"] and player.materials >= cost["mat"]
 
 
 # --- Economy ---
 
-func _calc_resource_deltas(player_idx: int) -> Dictionary:
-	var connected := _get_connected_positions(player_idx)
+# Simulates pass-1 (non-residential) with per-type production rules.
+# Resource cells run first so their SUP is available for industry in the same turn.
+# Resource: per-cell gate — runs only if MP sufficient, otherwise no cost and no output.
+# Industry: atomic per-cell gate — runs only if all inputs sufficient, otherwise skip.
+# Returns delta totals {mp,sup,mat} and running sim state {sim_mp,sim_sup,sim_mat} after upkeep.
+func _simulate_pass1(player_idx: int, connected: Dictionary) -> Dictionary:
+	var player := GameState.players[player_idx]
 	var mp := 0; var sup := 0; var mat := 0
+	var sim_mp := player.manpower; var sim_sup := player.supplies; var sim_mat := player.materials
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.cell_type != Cell.CellType.RESOURCE or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			var mp_d := _cell_mp(cell); var sup_d := _cell_sup(cell)
+			if mp_d >= 0 or sim_mp >= -mp_d:
+				var prev_mp := sim_mp
+				sim_mp = max(0, sim_mp + mp_d)
+				mp += sim_mp - prev_mp
+				sup += sup_d
+				sim_sup = max(0, sim_sup + sup_d)
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.cell_type != Cell.CellType.INDUSTRY or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			var mp_d := _cell_mp(cell); var sup_d := _cell_sup(cell); var mat_d := _cell_mat(cell)
+			if (mp_d < 0 and sim_mp < -mp_d) or (sup_d < 0 and sim_sup < -sup_d) or (mat_d < 0 and sim_mat < -mat_d):
+				continue
+			mp += mp_d; sup += sup_d; mat += mat_d
+			sim_mp = max(0, sim_mp + mp_d); sim_sup = max(0, sim_sup + sup_d); sim_mat = max(0, sim_mat + mat_d)
+	var upkeep: int = Config.get_value("economy.cell_sup_upkeep") * connected.size()
+	sup -= upkeep; sim_sup = max(0, sim_sup - upkeep)
+	return {"mp": mp, "sup": sup, "mat": mat, "sim_mp": sim_mp, "sim_sup": sim_sup, "sim_mat": sim_mat}
+
+
+# Checks which residential cells can't be fed given starting avail_sup/avail_mat.
+# Returns sup_starving, mat_starving bools and a starved array [{pos, sup, mat}].
+func _check_starvation(player_idx: int, connected: Dictionary, avail_sup: int, avail_mat: int) -> Dictionary:
+	var sup_starving := false
+	var mat_starving := false
+	var starved: Array = []
 	for z in GRID_SIZE:
 		for x in GRID_SIZE:
 			var cell: Cell = grid[z][x]
 			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
 				continue
-			mp += _cell_mp(cell)
-			sup += _cell_sup(cell)
-			mat += _cell_mat(cell)
-	var player := GameState.players[player_idx]
-	if player.supplies + sup <= 0:
+			if cell.cell_type != Cell.CellType.RESIDENTIAL or cell.upgrade_cooldown > 0 or cell.raze_turns_remaining > 0:
+				continue
+			var sup_need := -_cell_sup(cell)
+			var mat_need := -_cell_mat(cell)
+			var cell_sup_short := sup_need > 0 and avail_sup < sup_need
+			var cell_mat_short := mat_need > 0 and avail_mat < mat_need
+			if cell_sup_short:
+				sup_starving = true
+			if cell_mat_short:
+				mat_starving = true
+			if cell_sup_short or cell_mat_short:
+				starved.append({"pos": Vector2i(x, z), "sup": cell_sup_short, "mat": cell_mat_short})
+			avail_sup = max(0, avail_sup - sup_need)
+			avail_mat = max(0, avail_mat - mat_need)
+	return {"sup_starving": sup_starving, "mat_starving": mat_starving, "starved": starved}
+
+
+func _calc_resource_deltas(player_idx: int) -> Dictionary:
+	var connected := _get_connected_positions(player_idx)
+	var pass1 := _simulate_pass1(player_idx, connected)
+	var mp: int = pass1["mp"]; var sup: int = pass1["sup"]; var mat: int = pass1["mat"]
+	var sim_mp: int = pass1["sim_mp"]; var sim_sup: int = pass1["sim_sup"]; var sim_mat: int = pass1["sim_mat"]
+	var starvation := _check_starvation(player_idx, connected, sim_sup, sim_mat)
+	var starved_set := {}
+	for s in starvation["starved"]:
+		starved_set[s["pos"]] = true
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			if cell.cell_type != Cell.CellType.RESIDENTIAL:
+				continue
+			# Always consume SUP/MAT; only produce MP if not starved
+			var sup_d := _cell_sup(cell); var mat_d := _cell_mat(cell)
+			sup += sup_d; mat += mat_d
+			sim_sup = max(0, sim_sup + sup_d); sim_mat = max(0, sim_mat + mat_d)
+			if not starved_set.has(Vector2i(x, z)):
+				var mp_d := _cell_mp(cell)
+				mp += mp_d
+				sim_mp = max(0, sim_mp + mp_d)
+	if sim_sup == 0:
 		mp += Config.get_value("economy.zero_supply_mp_penalty")
-	if player.materials + mat <= 0:
+	if sim_mat == 0:
 		mp += Config.get_value("economy.zero_material_mp_penalty")
-	return {"mp": mp, "sup": sup, "mat": mat}
+	return {"mp": mp, "sup": sup, "mat": mat, "sup_starving": starvation["sup_starving"], "mat_starving": starvation["mat_starving"]}
 
 
 # Returns winner name on starvation game-over, empty string otherwise.
 func _apply_turn_effects(player_idx: int) -> String:
 	var player := GameState.players[player_idx]
 	var connected := _get_connected_positions(player_idx)
-	var residential_starved := false
+	# Pass 1a: Resource cells first — their SUP output is available for industry this turn.
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.cell_type != Cell.CellType.RESOURCE or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			var mp_delta := _cell_mp(cell)
+			var sup_delta := _cell_sup(cell)
+			if GameState.god_mode:
+				player.supplies = max(0, player.supplies + max(0, sup_delta))
+			elif mp_delta >= 0 or player.manpower >= -mp_delta:
+				player.manpower = max(0, player.manpower + mp_delta)
+				player.supplies = max(0, player.supplies + sup_delta)
+	# Pass 1b: Industry cells — atomic, skip if any input unaffordable.
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.cell_type != Cell.CellType.INDUSTRY or cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
+				continue
+			var mp_delta := _cell_mp(cell)
+			var sup_delta := _cell_sup(cell)
+			var mat_delta := _cell_mat(cell)
+			if GameState.god_mode:
+				player.manpower = max(0, player.manpower + max(0, mp_delta))
+				player.supplies = max(0, player.supplies + max(0, sup_delta))
+				player.materials = max(0, player.materials + max(0, mat_delta))
+			else:
+				if (mp_delta < 0 and player.manpower < -mp_delta) or \
+				   (sup_delta < 0 and player.supplies < -sup_delta) or \
+				   (mat_delta < 0 and player.materials < -mat_delta):
+					continue
+				player.manpower = max(0, player.manpower + mp_delta)
+				player.supplies = max(0, player.supplies + sup_delta)
+				player.materials = max(0, player.materials + mat_delta)
+	player.supplies = max(0, player.supplies - Config.get_value("economy.cell_sup_upkeep") * connected.size())
+	# Pass 2: residential cells that can't be fed are skipped (no MP output, counts as starvation).
+	var starvation_result := _check_starvation(player_idx, connected, player.supplies, player.materials)
+	var residential_starved: bool = starvation_result["sup_starving"] or starvation_result["mat_starving"]
+	var starved_set := {}
+	for s in starvation_result["starved"]:
+		starved_set[s["pos"]] = true
 	for z in GRID_SIZE:
 		for x in GRID_SIZE:
 			var cell: Cell = grid[z][x]
 			if cell.owner_index != player_idx or not connected.has(Vector2i(x, z)):
 				continue
-			# Starvation check before deducting (only active residential)
-			if cell.cell_type == Cell.CellType.RESIDENTIAL and cell.upgrade_cooldown == 0:
-				var sup_need := -_cell_sup(cell)
-				var mat_need := -_cell_mat(cell)
-				if player.supplies < sup_need or player.materials < mat_need:
-					residential_starved = true
-			var mp_delta := _cell_mp(cell)
+			if cell.cell_type != Cell.CellType.RESIDENTIAL:
+				continue
+			var is_starved := starved_set.has(Vector2i(cell.grid_x, cell.grid_z))
 			var sup_delta := _cell_sup(cell)
 			var mat_delta := _cell_mat(cell)
+			var mp_delta := _cell_mp(cell)
 			if GameState.god_mode:
-				mp_delta = max(0, mp_delta)
-				sup_delta = max(0, sup_delta)
-				mat_delta = max(0, mat_delta)
-			player.manpower = max(0, player.manpower + mp_delta)
-			player.supplies = max(0, player.supplies + sup_delta)
-			player.materials = max(0, player.materials + mat_delta)
+				player.manpower = max(0, player.manpower + max(0, mp_delta))
+				player.supplies = max(0, player.supplies + max(0, sup_delta))
+				player.materials = max(0, player.materials + max(0, mat_delta))
+			else:
+				# Always consume SUP/MAT; only produce MP if not starved
+				player.supplies = max(0, player.supplies + sup_delta)
+				player.materials = max(0, player.materials + mat_delta)
+				if not is_starved:
+					player.manpower = max(0, player.manpower + mp_delta)
 	if not GameState.god_mode:
 		if player.supplies == 0:
 			player.manpower = max(0, player.manpower + Config.get_value("economy.zero_supply_mp_penalty"))
@@ -433,11 +586,27 @@ func _tick_timers(player_idx: int) -> void:
 				cell.upgrade_cooldown -= 1
 				if cell.upgrade_cooldown == 0:
 					cell.set_upgrading(false)
+			if cell.mobilize_turns_remaining > 0 and cell.mobilize_owner_index != player_idx:
+				cell.mobilize_turns_remaining -= 1
+				if cell.mobilize_turns_remaining == 0:
+					cell.set_mobilizing(false)
+					if cell.mobilize_owner_index >= 0:
+						GameState.players[cell.mobilize_owner_index].manpower += cell.mobilize_mp_pending
+					cell.mobilize_mp_pending = 0
+					cell.mobilize_owner_index = -1
+					cell.mobilize_cooldown = Config.get_value("mobilize.cooldown_turns")
+			if cell.mobilize_cooldown > 0 and cell.owner_index == player_idx:
+				cell.mobilize_cooldown -= 1
+			# Contested heat decays one step per full round (tick on player 0's turn)
+			if player_idx == 0 and cell.contested_turns > 0:
+				cell.contested_turns -= 1
 
 
 # --- Input handlers ---
 
 func _on_cell_clicked(cell: Cell) -> void:
+	if game_net.is_input_blocked():
+		return
 	if _selected_cell != null and _selected_cell != cell:
 		_selected_cell.deselect()
 	_selected_cell = cell
@@ -455,25 +624,36 @@ func _on_cell_clicked(cell: Cell) -> void:
 		and cell.raze_turns_remaining == 0
 		and cell.owner_index == GameState.current_player_index
 	)
+	var show_mobilize := (
+		cell.cell_type == Cell.CellType.RESIDENTIAL
+		and cell.raze_turns_remaining == 0
+		and cell.owner_index == GameState.current_player_index
+	)
 	cell_panel.show_for_cell(
 		cell,
 		_can_occupy(cell), _occupation_cost(cell),
 		_can_raze(cell), _raze_cost(cell), _raze_yield_text(cell), show_raze,
 		_can_upgrade(cell), _upgrade_cost_text(cell), show_upgrade,
 		_can_convert(cell, Cell.CellType.RESIDENTIAL), _convert_cost_text(Cell.CellType.RESIDENTIAL), show_build,
-		_can_convert(cell, Cell.CellType.INDUSTRY), _convert_cost_text(Cell.CellType.INDUSTRY)
+		_can_convert(cell, Cell.CellType.INDUSTRY), _convert_cost_text(Cell.CellType.INDUSTRY),
+		_can_mobilize(cell), _mobilize_cost_text(cell), show_mobilize
 	)
 
 
 func _on_occupy_pressed(cell: Cell) -> void:
 	var player := GameState.current_player()
-	var is_enemy_residential := (
-		cell.owner_index != -1
-		and cell.owner_index != GameState.current_player_index
-		and cell.cell_type == Cell.CellType.RESIDENTIAL
+	var enemy_idx := cell.owner_index
+	var is_enemy_residential: bool = (
+		enemy_idx != -1
+		and enemy_idx != GameState.current_player_index
+		and _start_positions[enemy_idx] == Vector2i(cell.grid_x, cell.grid_z)
 	)
 	if not GameState.god_mode:
 		player.manpower -= _occupation_cost(cell)
+	if cell.owner_index != -1:
+		cell.contested_turns += 1
+	else:
+		cell.contested_turns = 0
 	cell.claim(player)
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
@@ -482,6 +662,7 @@ func _on_occupy_pressed(cell: Cell) -> void:
 	if is_enemy_residential:
 		_is_game_over = true
 		hud.show_game_over(player.player_name)
+		_maybe_auto_restart()
 
 
 func _on_raze_pressed(cell: Cell) -> void:
@@ -489,16 +670,17 @@ func _on_raze_pressed(cell: Cell) -> void:
 	if not GameState.god_mode:
 		player.manpower -= _raze_cost(cell)
 	var yield_turns: int = Config.get_value("raze.resource_yield_turns")
+	var level := _raze_effective_level(cell)
 	match cell.cell_type:
 		Cell.CellType.RESOURCE:
 			player.supplies += int(Config.get_value("economy.resource_cell_sup")) * yield_turns
 		Cell.CellType.INDUSTRY:
 			var mat_vals: Array = Config.get_value("economy.industry_cell_mat_per_level")
-			player.materials += int(mat_vals[cell.cell_level - 1]) * yield_turns
+			player.materials += int(mat_vals[level - 1]) * yield_turns
 		Cell.CellType.RESIDENTIAL:
 			var mp_vals: Array = Config.get_value("economy.residential_cell_mp_per_level")
 			var pct: int = 100 if cell.owner_index == GameState.current_player_index else Config.get_value("raze.residential_mp_refund_percent")
-			player.manpower += int(mp_vals[cell.cell_level - 1] * pct / 100.0)
+			player.manpower += int(mp_vals[level - 1] * pct / 100.0)
 	cell.raze_player_index = GameState.current_player_index
 	cell.raze()
 	_selected_cell = null
@@ -513,6 +695,7 @@ func _on_upgrade_pressed(cell: Cell) -> void:
 	if not GameState.god_mode:
 		player.manpower -= cost["mp"]
 		player.supplies -= cost["sup"]
+		player.materials -= cost["mat"]
 	cell.upgrade()
 	_selected_cell = null
 	GameState.has_occupied_this_turn = true
@@ -543,13 +726,30 @@ func _on_build_industrial_pressed(cell: Cell) -> void:
 	_update_hud()
 
 
+func _on_mobilize_pressed(cell: Cell) -> void:
+	var mat_costs: Array = Config.get_value("mobilize.residential_mat_costs")
+	var mp_yields: Array = Config.get_value("mobilize.residential_mp_yields")
+	var idx: int = cell.cell_level - 1
+	var player := GameState.current_player()
+	if not GameState.god_mode:
+		player.materials -= mat_costs[idx]
+	cell.mobilize_turns_remaining = 1
+	cell.mobilize_mp_pending = mp_yields[idx]
+	cell.mobilize_owner_index = GameState.current_player_index
+	cell.set_mobilizing(true)
+	cell.deselect()
+	_selected_cell = null
+	GameState.has_occupied_this_turn = true
+	_update_hud()
+
+
 func _on_panel_closed() -> void:
 	if _selected_cell != null:
 		_selected_cell.deselect()
 		_selected_cell = null
 
 
-func _on_end_turn() -> void:
+func _do_end_turn() -> void:
 	if _is_game_over:
 		return
 	if _selected_cell != null:
@@ -562,14 +762,39 @@ func _on_end_turn() -> void:
 	if winner != "":
 		_is_game_over = true
 		hud.show_game_over(winner)
+		_maybe_auto_restart()
 		return
 	GameState.end_turn()
 
 
+func _maybe_auto_restart() -> void:
+	if GameState.ai_flags[0] and GameState.ai_flags[1]:
+		await get_tree().create_timer(3.0).timeout
+		GameState.reset()
+		get_tree().change_scene_to_file("res://main.tscn")
+
+
+func _schedule_ai_turn() -> void:
+	if not _is_game_over:
+		ai_player.take_turn()
+
+
 func _on_turn_changed(_player: PlayerData) -> void:
-	camera_rig.focus_for_player(GameState.current_player_index)
+	game_net.on_turn_changed()
 	_update_hud()
 	_refresh_reachable_highlights()
+	_refresh_upgrade_displays()
+	if GameState.ai_flags[GameState.current_player_index]:
+		_schedule_ai_turn()
+
+
+func _refresh_upgrade_displays() -> void:
+	var idx: int = GameState.current_player_index
+	for z in GRID_SIZE:
+		for x in GRID_SIZE:
+			var cell: Cell = grid[z][x]
+			if cell.upgrade_cooldown > 0 and cell.owner_index == idx:
+				cell.refresh_upgrading_turns()
 
 
 func _on_resource_info_requested(which: String) -> void:
@@ -639,7 +864,6 @@ func _compute_resource_breakdown(which: String) -> String:
 
 
 func _update_shortage_indicators() -> void:
-	# Reset all cells first
 	for z in GRID_SIZE:
 		for x in GRID_SIZE:
 			(grid[z][x] as Cell).set_shortage(false)
@@ -647,6 +871,14 @@ func _update_shortage_indicators() -> void:
 	for player_idx in GameState.players.size():
 		var player := GameState.players[player_idx]
 		var connected := _get_connected_positions(player_idx)
+		var pass1 := _simulate_pass1(player_idx, connected)
+		var starvation := _check_starvation(player_idx, connected, pass1["sim_sup"], pass1["sim_mat"])
+		for s in starvation["starved"]:
+			var pos: Vector2i = s["pos"]
+			var res: Array[String] = []
+			if s["sup"]: res.append("SUP")
+			if s["mat"]: res.append("MAT")
+			grid[pos.y][pos.x].set_shortage(true, ", ".join(res) + " Shortage")
 		for z in GRID_SIZE:
 			for x in GRID_SIZE:
 				var cell: Cell = grid[z][x]
@@ -654,7 +886,8 @@ func _update_shortage_indicators() -> void:
 					continue
 				if cell.raze_turns_remaining > 0 or cell.upgrade_cooldown > 0:
 					continue
-				var parts: Array[String] = []
+				if cell.cell_type == Cell.CellType.RESIDENTIAL:
+					continue
 				var res: Array[String] = []
 				if -_cell_mp(cell) > 0 and player.manpower <= 0:
 					res.append("MP")
@@ -666,6 +899,13 @@ func _update_shortage_indicators() -> void:
 					cell.set_shortage(true, ", ".join(res) + " Shortage")
 
 
+func _cmd_aivsai(_args: Array) -> void:
+	GameState.ai_flags = [true, true]
+	ConsoleController.print_line("AI vs AI enabled — both players now controlled by AI")
+	if not _is_game_over:
+		ai_player.take_turn()
+
+
 func _cmd_god(_args: Array) -> void:
 	GameState.god_mode = not GameState.god_mode
 	var state := "ON" if GameState.god_mode else "OFF"
@@ -674,6 +914,6 @@ func _cmd_god(_args: Array) -> void:
 
 func _update_hud() -> void:
 	var deltas := _calc_resource_deltas(GameState.current_player_index)
-	hud.update_turn(GameState.current_player().player_name)
-	hud.update_resources(GameState.current_player(), deltas["mp"], deltas["sup"], deltas["mat"])
+	hud.update_turn(GameState.current_player().player_name, GameState.turn_number)
+	hud.update_resources(GameState.current_player(), deltas["mp"], deltas["sup"], deltas["mat"], deltas["sup_starving"], deltas["mat_starving"])
 	_update_shortage_indicators()
