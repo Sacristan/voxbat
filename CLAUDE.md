@@ -18,22 +18,22 @@ To launch the Godot editor via MCP: `mcp__godot__launch_editor`.
 
 | Scene | Script | Role |
 |---|---|---|
-| `ui/main_menu.tscn` | `scripts/main_menu.gd` | Entry point; routes to Local Versus or Multiplayer lobby |
-| `ui/lobby.tscn` | `scripts/lobby.gd` | ENet host/join UI; sets `GameState` multiplayer flags before loading `main.tscn` |
-| `main.tscn` | `scripts/main.gd` | Core game loop; owns the hex grid, handles all action logic, economy, and win conditions |
-| `scenes/cell.tscn` | `scripts/cell.gd` | Individual hex cell: state machine (type/level/owner), visual updates, 3D mesh |
-| `ui/hud.tscn` | `scripts/hud.gd` | Turn/resource display and end-turn button |
-| `ui/cell_panel.tscn` | `scripts/cell_panel.gd` | Context panel shown on cell click; emits action signals |
+| `hexfront/ui/main_menu.tscn` | `hexfront/scripts/main_menu.gd` | Entry point; routes to Local Versus or Multiplayer lobby |
+| `hexfront/ui/lobby.tscn` | `hexfront/scripts/lobby.gd` | ENet host/join UI; sets `GameState` multiplayer flags before loading `main.tscn` |
+| `hexfront/main.tscn` | `hexfront/scripts/main.gd` | Core game loop; owns the hex grid, handles all action logic, economy, and win conditions |
+| `hexfront/scenes/cell.tscn` | `hexfront/scripts/cell.gd` | Individual hex cell: state machine (type/level/owner), visual updates, 3D mesh |
+| `hexfront/ui/hud.tscn` | `hexfront/scripts/hud.gd` | Turn/resource display and end-turn button |
+| `hexfront/ui/cell_panel.tscn` | `hexfront/scripts/cell_panel.gd` | Context panel shown on cell click; emits action signals |
 
 ### Autoloads (Singletons)
 
-- **`GameState`** (`scripts/game_state.gd`) — holds `players: Array[PlayerData]`, `current_player_index`, turn flags, and multiplayer identity (`is_multiplayer`, `is_host`, `my_peer_id`).
-- **`Config`** (`scripts/config.gd`) — parses `config.json` at startup; all game balance values are accessed via `Config.get_value("section.key")`.
-- **`ConsoleController`** — addon (`addons/ahhnold_console/`) providing an in-game debug console. Register commands with `ConsoleController.register_command(name, callable, description)`.
+- **`GameState`** (`hexfront/scripts/game_state.gd`) — holds `players: Array[PlayerData]`, `current_player_index`, turn flags, and multiplayer identity (`is_multiplayer`, `is_host`, `my_peer_id`).
+- **`Config`** (`hexfront/scripts/config.gd`) — parses `config.json` at startup; all game balance values are accessed via `Config.get_value("section.key")`.
+- **`ConsoleController`** — addon (`hexfront/addons/ahhnold_console/`) providing an in-game debug console. Register commands with `ConsoleController.register_command(name, callable, description)`.
 
 ### Networking Layer
 
-`scripts/game_net.gd` (child of `main.tscn`) decouples input from game logic:
+`hexfront/scripts/game_net.gd` (child of `main.tscn`) decouples input from game logic:
 - `handle_action(action, cell)` — in singleplayer calls the `_main` handler directly; in multiplayer, clients RPC to host which validates then broadcasts `_apply_*` RPCs to both peers.
 - `handle_end_turn()` — same pattern for turn advancement.
 - `is_input_blocked()` — returns `true` when it is not the local player's turn (multiplayer only).
@@ -48,7 +48,7 @@ All game logic lives in `main.gd`. Key methods:
 
 ### Configuration
 
-All balance values live in `config.json` (flat key paths, dot-separated). Economy, occupation costs, raze costs, upgrade costs, convert costs, and camera settings are all data-driven. Player names, colors, and starting resources are also set here.
+All balance values live in `hexfront/config.json` (flat key paths, dot-separated). Economy, occupation costs, raze costs, upgrade costs, convert costs, and camera settings are all data-driven. Player names, colors, and starting resources are also set here.
 
 ### Cell Model
 

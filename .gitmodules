@@ -1,3 +1,3 @@
 [submodule "addons/ahhnold_console"]
-	path = addons/ahhnold_console
+	path = hexfront/addons/ahhnold_console
 	url = git@github.com:Sacristan/AhhnoldConsole_Godot.git
